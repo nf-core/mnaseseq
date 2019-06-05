@@ -9,7 +9,7 @@ channels:
 dependencies:
   ## conda-forge packages
   - r-base=3.4.1
-  - r-rmarkdown=0.8
+  - r-markdown=0.8
   #- conda-forge::libiconv=1.15     ## IS THIS REQUIRED?
 
   ## bioconda packages
