@@ -9,8 +9,8 @@ channels:
 dependencies:
   ## conda-forge packages
   - r-base=3.4.1
+  - r-rmarkdown=0.8
   #- conda-forge::libiconv=1.15     ## IS THIS REQUIRED?
-  #- conda-forge::r-rmarkdown=1.10  ## IS THIS REQUIRED? WHAT VERSION?
 
   ## bioconda packages
   - fastqc=0.11.8
@@ -22,7 +22,7 @@ dependencies:
   - pysam=0.15.2
   - bedtools=2.27.1
   - ucsc-bedgraphtobigwig=377
-  #- ucsc-wigtobigwig=377           ## IS THIS REQUIRED?
+  - ucsc-wigtobigwig=377
   - preseq=2.0.3
   - deeptools=3.2.1
   - danpos=2.2.2
