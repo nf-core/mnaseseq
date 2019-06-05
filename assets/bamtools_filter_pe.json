@@ -1,0 +1,24 @@
+{
+    "filters" : [
+        { "id" : "insert_neg_range",
+          "insertSize" : ">=-MIN_INSERT_SIZE",
+          "insertSize" : "<=-MAX_INSERT_SIZE"
+        },
+
+        { "id" : "insert_pos_range",
+          "insertSize" : ">=MIN_INSERT_SIZE",
+          "insertSize" : "<=MAX_INSERT_SIZE"
+        },
+
+        { "id" : "mismatch",
+          "tag" : "XM:<=MAX_MISMATCH"
+        },
+
+        { "id" : "cigar",
+          "cigar" : "*S*"
+        }
+    ],
+
+    "rule" : " ( insert_neg_range | insert_pos_range ) & mismatch & !cigar "
+
+}
