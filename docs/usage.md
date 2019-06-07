@@ -11,12 +11,30 @@
   * [Reproducibility](#reproducibility)
 * [Main arguments](#main-arguments)
   * [`-profile`](#-profile)
-  * [`--reads`](#--reads)
+  * [`--design`](#--design)
+* [Generic arguments](#generic-arguments)
   * [`--singleEnd`](#--singleend)
+  * [`--seq_center`](#--seq_center)
+  * [`--fragment_size`](#--fragment_size)
+  * [`--fingerprint_bins`](#--fingerprint_bins)
 * [Reference genomes](#reference-genomes)
   * [`--genome` (using iGenomes)](#--genome-using-igenomes)
   * [`--fasta`](#--fasta)
+  * [`--gtf`](#--gtf)
+  * [`--bwa_index`](#--bwa_index)
+  * [`--gene_bed`](#--gene_bed)
+  * [`--tss_bed`](#--tss_bed)
+  * [`--blacklist`](#--blacklist)
+  * [`--saveGenomeIndex`](#--savegenomeindex)
   * [`--igenomesIgnore`](#--igenomesignore)
+* [Adapter trimming](#adapter-trimming)
+  * [`--skipTrimming`](#--skiptrimming)
+  * [`--saveTrimmed`](#--savetrimmed)
+* [Alignments](#alignments)
+  * [`--keepDups`](#--keepdups)
+  * [`--keepMultiMap`](#--keepmultimap)
+  * [`--saveAlignedIntermediates`](#--savealignedintermediates)
+* [Skipping QC steps](#skipping-qc-steps)
 * [Job resources](#job-resources)
   * [Automatic resubmission](#automatic-resubmission)
   * [Custom resource requests](#custom-resource-requests)
@@ -49,13 +67,11 @@ It is recommended to limit the Nextflow Java virtual machines memory. We recomme
 NXF_OPTS='-Xms1g -Xmx4g'
 ```
 
-<!-- TODO nf-core: Document required command line parameters to run the pipeline-->
-
 ## Running the pipeline
 The typical command for running the pipeline is as follows:
 
 ```bash
-nextflow run nf-core/mnaseseq --reads '*_R{1,2}.fastq.gz' -profile docker
+nextflow run nf-core/mnaseseq --design design.csv --genome GRCh37 -profile docker
 ```
 
 This will launch the pipeline with the `docker` configuration profile. See below for more information about profiles.
@@ -87,7 +103,7 @@ This version number will be logged in reports when you run the pipeline, so that
 ## Main arguments
 
 ### `-profile`
-Use this parameter to choose a configuration profile. Profiles can give configuration presets for different compute environments. Note that multiple profiles can be loaded, for example: `-profile docker` - the order of arguments is important!
+Use this parameter to choose a configuration profile. Profiles can give configuration pre-sets for different compute environments. Note that multiple profiles can be loaded, for example: `-profile docker` - the order of arguments is important!
 
 If `-profile` is not specified at all the pipeline will be run locally and expects all software to be installed and available on the `PATH`.
 
@@ -106,32 +122,74 @@ If `-profile` is not specified at all the pipeline will be run locally and expec
   * A profile with a complete configuration for automated testing
   * Includes links to test data so needs no other parameters
 
-<!-- TODO nf-core: Document required command line parameters -->
-
-### `--reads`
-Use this to specify the location of your input FastQ files. For example:
+### `--design`
+You will need to create a design file with information about the samples in your experiment before running the pipeline. Use this parameter to specify its location. It has to be a comma-separated file with 6 columns, and a header row as shown in the examples below.
 
 ```bash
---reads 'path/to/data/sample_*_{1,2}.fastq'
+--design '[path to design file]'
 ```
 
-Please note the following requirements:
+#### Multiple replicates
 
-1. The path must be enclosed in quotes
-2. The path must have at least one `*` wildcard character
-3. When using the pipeline with paired end data, the path must use `{1,2}` notation to specify read pairs.
+The `group` identifier should be identical when you have multiple replicates from the same experimental group, just increment the `replicate` identifier appropriately. The first replicate value for any given experimental group must be 1.
 
-If left unspecified, a default pattern is used: `data/*{1,2}.fastq.gz`
+In the single-end design below there are triplicate samples for both the `WT` and `KO` groups.
+
+```bash
+group,replicate,fastq_1,fastq_2
+WT,1,BLA203A1_S27_L006_R1_001.fastq.gz,
+WT,2,BLA203A25_S16_L002_R1_001.fastq.gz,
+WT,3,BLA203A49_S40_L001_R1_001.fastq.gz,
+WT,1,BLA203A6_S32_L006_R1_001.fastq.gz,
+WT,2,BLA203A30_S21_L002_R1_001.fastq.gz,
+WT,3,BLA203A31_S21_L003_R1_001.fastq.gz,
+```
+
+#### Multiple runs of the same library
+
+Both the `group` and `replicate` identifiers should be the same when you have re-sequenced the same sample more than once e.g. to increase sequencing depth. The pipeline will perform the alignments in parallel, and subsequently merge them before further analysis. Below is an example where the second replicate of the `WT` and `KO` groups has been re-sequenced multiple times:
+
+```bash
+group,replicate,fastq_1,fastq_2
+WT,1,BLA203A1_S27_L006_R1_001.fastq.gz,
+WT,2,BLA203A25_S16_L001_R1_001.fastq.gz,
+WT,2,BLA203A25_S16_L002_R1_001.fastq.gz,
+WT,2,BLA203A25_S16_L003_R1_001.fastq.gz,
+WT,3,BLA203A49_S40_L001_R1_001.fastq.gz,
+KO,1,BLA203A6_S32_L006_R1_001.fastq.gz,
+KO,2,BLA203A30_S21_L001_R1_001.fastq.gz,
+KO,2,BLA203A30_S21_L002_R1_001.fastq.gz,
+KO,3,BLA203A31_S21_L003_R1_001.fastq.gz,
+```
+
+| Column      | Description                                                                                                                                      |
+|-------------|--------------------------------------------------------------------------------------------------------------------------------------------------|
+| `group`     | Group/condition identifier for sample. This will be identical for re-sequenced libraries and replicate samples from the same experimental group. |
+| `replicate` | Integer representing replicate number. This will be identical for re-sequenced libraries. Must start from `1..<number of replicates>`.           |
+| `fastq_1`   | Full path to FastQ file for read 1. File has to be zipped and have the extension ".fastq.gz" or ".fq.gz".                                        |
+| `fastq_2`   | Full path to FastQ file for read 2. File has to be zipped and have the extension ".fastq.gz" or ".fq.gz".                                        |
+
+Example design files have been provided with the pipeline for [paired-end](../assets/design_pe.csv) and [single-end](../assets/design_se.csv) data.
+
+## Generic arguments
 
 ### `--singleEnd`
-By default, the pipeline expects paired-end data. If you have single-end data, you need to specify `--singleEnd` on the command line when you launch the pipeline. A normal glob pattern, enclosed in quotation marks, can then be used for `--reads`. For example:
-
-```bash
---singleEnd --reads '*.fastq'
-```
+By default, the pipeline expects paired-end data. If you have single-end data, specify `--singleEnd` on the command line when you launch the pipeline.
 
 It is not possible to run a mixture of single-end and paired-end files in one run.
 
+### `--seq_center`
+Sequencing center information that will be added to read groups in BAM files.
+
+### `--fragment_size`
+Number of base pairs to extend single-end reads when creating bigWig files.
+
+Default: `150`
+
+### `--fingerprint_bins`
+Number of genomic bins to use when generating the deepTools fingerprint plot. Larger numbers will give a smoother profile, but take longer to run.
+
+Default: `500000`
 
 ## Reference genomes
 
@@ -157,8 +215,6 @@ Note that you can use the same configuration setup to save sets of reference fil
 
 The syntax for this reference configuration is as follows:
 
-<!-- TODO nf-core: Update reference genome example according to what is needed -->
-
 ```nextflow
 params {
   genomes {
@@ -170,16 +226,115 @@ params {
 }
 ```
 
-<!-- TODO nf-core: Describe reference path flags -->
 ### `--fasta`
-If you prefer, you can specify the full path to your reference genome when you run the pipeline:
+Full path to fasta file containing reference genome (*mandatory* if `--genome` is not specified). If you don't have a BWA index available this will be generated for you automatically. Combine with `--saveGenomeIndex` to save BWA index for future runs.
 
 ```bash
---fasta '[path to Fasta reference]'
+--fasta '[path to FASTA reference]'
 ```
+
+### `--gtf`
+The full path to GTF file for annotating peaks (*mandatory* if `--genome` is not specified). Note that the GTF file should resemble the Ensembl format.
+
+```bash
+--gtf '[path to GTF file]'
+```
+
+### `--bwa_index`
+Full path to an existing BWA index for your reference genome including the base name for the index.
+
+```bash
+--bwa_index '[directory containing BWA index]/genome.fa'
+```
+
+### `--gene_bed`
+The full path to BED file for genome-wide gene intervals. This will be created from the GTF file if not specified.
+
+```bash
+--gene_bed '[path to gene BED file]'
+```
+
+### `--tss_bed`
+The full path to BED file for genome-wide transcription start sites. This will be created from the gene BED file if not specified.
+
+```bash
+--tss_bed '[path to tss BED file]'
+```
+
+### `--blacklist`
+If provided, alignments that overlap with the regions in this file will be filtered out (see [ENCODE blacklists](https://sites.google.com/site/anshulkundaje/projects/blacklists)). The file should be in BED format. Blacklisted regions for *GRCh37*, *GRCh38*, *GRCm38*, *hg19*, *hg38*, *mm10* are bundled with the pipeline in the [`blacklists`](../assets/blacklists/) directory, and as such will be automatically used if any of those genomes are specified with the `--genome` parameter.
+
+```bash
+--blacklist '[path to blacklisted regions]'
+```
+
+### `--saveGenomeIndex`
+If the BWA index is generated by the pipeline use this parameter to save it to your results folder. These can then be used for future pipeline runs, reducing processing times.
 
 ### `--igenomesIgnore`
 Do not load `igenomes.config` when running the pipeline. You may choose this option if you observe clashes between custom parameters and those supplied in `igenomes.config`.
+
+## Adapter trimming
+The pipeline accepts a number of parameters to change how the trimming is done, according to your data type.
+You can specify custom trimming parameters as follows:
+
+* `--clip_r1 <NUMBER>`
+  * Instructs Trim Galore to remove bp from the 5' end of read 1 (for single-end reads).
+* `--clip_r2 <NUMBER>`
+  * Instructs Trim Galore to remove bp from the 5' end of read 2 (paired-end reads only).
+* `--three_prime_clip_r1 <NUMBER>`
+  * Instructs Trim Galore to remove bp from the 3' end of read 1 _AFTER_ adapter/quality trimming has been
+* `--three_prime_clip_r2 <NUMBER>`
+  * Instructs Trim Galore to re move bp from the 3' end of read 2 _AFTER_ adapter/quality trimming has been performed.
+
+### `--skipTrimming`
+Skip the adapter trimming step. Use this if your input FastQ files have already been trimmed outside of the workflow or if you're very confident that there is no adapter contamination in your data.
+
+### `--saveTrimmed`
+By default, trimmed FastQ files will not be saved to the results directory. Specify this flag (or set to true in your config file) to copy these files to the results directory when complete.
+
+## Alignments
+
+### `--max_mismatch`
+Maximum number of mismatches in alignment. Derived from XM tag in BAM file.
+
+Default: `4`
+
+### `--min_insert`
+Minimum insert size for filtering of mono-nucleosome paired-end reads.
+
+Default: `100`
+
+### `--max_insert`
+Maximum insert size for filtering of mono-nucleosome paired-end reads.
+
+Default: `200`
+
+### `--keepDups`
+Duplicate reads are not filtered from alignments.
+
+### `--keepMultiMap`
+Reads mapping to multiple locations in the genome are not filtered from alignments.
+
+### `--saveAlignedIntermediates`
+By default, intermediate BAM files will not be saved. The final BAM files created after the appropriate filtering step are always saved to limit storage usage. Set to true to also save other intermediate BAM files.
+
+## Skipping QC steps
+
+The pipeline contains a large number of quality control steps. Sometimes, it may not be desirable to run all of them if time and compute resources are limited.
+The following options make this easy:
+
+| Step                    | Description                        |
+|-------------------------|------------------------------------|
+| `--skipFastQC`          | Skip FastQC                        |
+| `--skipPicardMetrics`   | Skip Picard CollectMultipleMetrics |
+| `--skipPreseq`          | Skip Preseq                        |
+| `--skipPlotProfile`     | Skip deepTools plotProfile         |
+| `--skipPlotFingerprint` | Skip deepTools plotFingerprint     |
+| `--skipIGV`             | Skip IGV                           |
+| `--skipMultiQC`         | Skip MultiQC                       |
+
+`--skipMultiQCStats` allows you to exclude the [general statistics table](https://multiqc.info/docs/#general-statistics-table) from the MultiQC report.
 
 ## Job resources
 ### Automatic resubmission
@@ -202,8 +357,6 @@ The AWS region to run your job in. Default is set to `eu-west-1` but can be adju
 Please make sure to also set the `-w/--work-dir` and `--outdir` parameters to a S3 storage bucket of your choice - you'll get an error message notifying you if you didn't.
 
 ## Other command line parameters
-
-<!-- TODO nf-core: Describe any other command line flags here -->
 
 ### `--outdir`
 The output directory where the results will be saved.
