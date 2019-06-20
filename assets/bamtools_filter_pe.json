@@ -11,7 +11,7 @@
         },
 
         { "id" : "mismatch",
-          "tag" : "XM:<=MAX_MISMATCH"
+          "tag" : "NM:<=MAX_MISMATCH"
         },
 
         { "id" : "cigar",

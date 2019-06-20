@@ -69,7 +69,7 @@ module_order:
 report_section_order:
     software_versions:
         order: -1000
-    nf-core-chipseq-summary:
+    nf-core-mnaseseq-summary:
         order: -1100
 
 custom_plot_config:

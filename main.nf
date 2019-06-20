@@ -28,7 +28,7 @@ def helpMessage() {
     Generic
       --singleEnd                   Specifies that the input is single-end reads
       --seq_center                  Sequencing center information to be added to read group of BAM files
-      --fragment_size [int]         Estimated fragment size used to extend single-end reads (Default: 200)
+      --fragment_size [int]         Estimated fragment size used to extend single-end reads (Default: 150)
       --fingerprint_bins [int]      Number of genomic bins to use when calculating fingerprint plot (Default: 500000)
 
     References                      If not specified in the configuration file or you wish to overwrite any of the references
@@ -209,7 +209,7 @@ if (params.skipTrimming){
 if (params.seq_center)          summary['Sequencing Center'] = params.seq_center
 if (params.singleEnd)           summary['Fragment Size'] = "$params.fragment_size bp"
 summary['Fingerprint Bins']     = params.fingerprint_bins
-summary['Max Mismatch']         = $params.max_mismatch
+summary['Max Mismatch']         = params.max_mismatch
 summary['Min Insert Size']      = "$params.min_insert bp"
 summary['Max Insert Size']      = "$params.max_insert bp"
 if (params.keepDups)            summary['Keep Duplicates'] = 'Yes'
@@ -739,7 +739,7 @@ if (params.singleEnd){
 
         output:
         set val(name), file("*.sorted.{bam,bam.bai}") into ch_rm_orphan_bam_metrics,
-                                                           ch_rm_orphan_bam_bigwig,
+                                                           ch_rm_orphan_bam_bigwig
         set val(name), file("${prefix}.bam") into ch_rm_orphan_name_bam_counts
         set val(name), file("*.flagstat") into ch_rm_orphan_flagstat_bigwig,
                                                ch_rm_orphan_flagstat_mqc
@@ -1175,7 +1175,7 @@ process multiqc {
     file ('alignment/mergedLibrary/picard_metrics/*') from ch_collectmetrics_mqc.collect()
 
     file ('preseq/*') from ch_preseq_results.collect().ifEmpty([])
-    file ('deeptools/*') from ch_plotfingerprint_mqc.collect().ifEmpty([])
+    //file ('deeptools/*') from ch_plotfingerprint_mqc.collect().ifEmpty([])
     file ('deeptools/*') from ch_plotprofile_mqc.collect().ifEmpty([])
     file ('software_versions/*') from ch_software_versions_mqc.collect()
     file ('workflow_summary/*') from create_workflow_summary(summary)

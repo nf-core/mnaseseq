@@ -52,6 +52,26 @@ The nf-core/mnaseseq pipeline comes with documentation about the pipeline, found
 4. [Output and how to interpret the results](docs/output.md)
 5. [Troubleshooting](https://nf-co.re/usage/troubleshooting)
 
+## Quick Start
+
+i. Install [`nextflow`](https://nf-co.re/usage/installation)
+
+ii. Install one of [`docker`](https://docs.docker.com/engine/installation/), [`singularity`](https://www.sylabs.io/guides/3.0/user-guide/) or [`conda`](https://conda.io/miniconda.html)
+
+iii. Download the pipeline and test it on a minimal dataset with a single command
+
+```bash
+nextflow run nf-core/mnaseseq -profile test,<docker/singularity/conda>
+```
+
+iv. Start running your own analysis!
+
+```bash
+nextflow run nf-core/mnaseseq -profile <docker/singularity/conda> --design design.csv --genome GRCh37
+```
+
+See [usage docs](docs/usage.md) for all of the available options when running the pipeline.
+
 ## Credits
 
 The pipeline was originally written by the [The Bioinformatics & Biostatistics Group](https://www.crick.ac.uk/research/science-technology-platforms/bioinformatics-and-biostatistics/) for use at [The Francis Crick Institute](https://www.crick.ac.uk/), London.
@@ -60,8 +80,8 @@ The pipeline was developed by [Harshil Patel](mailto:harshil.patel@crick.ac.uk).
 
 ## Citation
 
-<!-- TODO nf-core: Add citation for pipeline after release. Uncomment lines below and add citation. -->
-<!-- If you use nf-core/chipseq for your analysis, please cite it as follows: -->
+<!-- TODO nf-core: Add citation for pipeline after first release. Uncomment lines below and update Zenodo doi. -->
+<!-- If you use  {{ cookiecutter.name }} for your analysis, please cite it using the following doi: [10.5281/zenodo.XXXXXX](https://doi.org/10.5281/zenodo.XXXXXX) -->
 
 You can cite the `nf-core` pre-print as follows:  
 Ewels PA, Peltzer A, Fillinger S, Alneberg JA, Patel H, Wilm A, Garcia MU, Di Tommaso P, Nahnsen S. **nf-core: Community curated bioinformatics pipelines**. *bioRxiv*. 2019. p. 610741. [doi: 10.1101/610741](https://www.biorxiv.org/content/10.1101/610741v1).
