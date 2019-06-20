@@ -10,7 +10,6 @@ dependencies:
   ## conda-forge packages
   - r-base=3.4.1
   - r-markdown=0.8
-  #- conda-forge::libiconv=1.15     ## IS THIS REQUIRED?
 
   ## bioconda packages
   - fastqc=0.11.8
@@ -25,5 +24,7 @@ dependencies:
   - ucsc-wigtobigwig=377
   - preseq=2.0.3
   - deeptools=3.2.1
-  - danpos=2.2.2
   - multiqc=1.7
+
+  ## other packages
+  - danpos=2.2.2
