@@ -100,7 +100,7 @@ The library-level alignments associated with the same sample are merged and subs
     * `bwa/mergedLibrary/samtools_stats/`  
       SAMtools `*.flagstat`, `*.idxstats` and `*.stats` files generated from the alignment files.
     * `bwa/mergedLibrary/picard_metrics/`  
-      Alignment QC files from picard CollectMultipleMetrics and the metrics file from MarkDuplicates: `*_metrics` and `*.metrics.txt`, respectively.
+      Alignment QC files from picard CollectMultipleMetrics and the metrics file from MarkDuplicates: `*_metrics` and `*.metrics.txt`, respectively. These are generated both *before* (`*.mLb.mkD.*`) and *after* (`*.mLb.clN.*`) read filtering.
     * `bwa/mergedLibrary/picard_metrics/pdf/`  
       Alignment QC plot files in `*.pdf` format from picard CollectMultipleMetrics.
     * `bwa/mergedLibrary/preseq/`  
