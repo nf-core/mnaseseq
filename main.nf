@@ -43,7 +43,7 @@ def helpMessage() {
       --clip_r1 [int]               Instructs Trim Galore to remove bp from the 5' end of read 1 (or single-end reads) (Default: 0)
       --clip_r2 [int]               Instructs Trim Galore to remove bp from the 5' end of read 2 (paired-end reads only) (Default: 0)
       --three_prime_clip_r1 [int]   Instructs Trim Galore to remove bp from the 3' end of read 1 AFTER adapter/quality trimming has been performed (Default: 0)
-      --three_prime_clip_r2 [int]   Instructs Trim Galore to re move bp from the 3' end of read 2 AFTER adapter/quality trimming has been performed (Default: 0)
+      --three_prime_clip_r2 [int]   Instructs Trim Galore to remove bp from the 3' end of read 2 AFTER adapter/quality trimming has been performed (Default: 0)
       --skipTrimming                Skip the adapter trimming step
       --saveTrimmed                 Save the trimmed FastQ files in the the results directory
 
@@ -259,7 +259,7 @@ checkHostname()
 ///////////////////////////////////////////////////////////////////////////////
 
 /*
- * PREPROCESSING - REFORMAT DESIGN FILE, CHECK VALIDITY & CREATE IP vs CONTROL MAPPINGS
+ * PREPROCESSING - REFORMAT & CHECK DESIGN FILE
  */
 process checkDesign {
     tag "$design"
@@ -381,7 +381,8 @@ process makeGenomeFilter {
     file "$fasta" into ch_genome_fasta                 // FASTA FILE FOR IGV
     file "*.fai" into ch_genome_fai                    // FAI INDEX FOR REFERENCE GENOME
     file "*.bed" into ch_genome_filter_regions         // BED FILE WITHOUT BLACKLIST REGIONS
-    file "*.sizes" into ch_genome_sizes_bigwig         // CHROMOSOME SIZES FILE FOR BEDTOOLS
+    file "*.sizes" into ch_genome_sizes_bigwig,        // CHROMOSOME SIZES FILE FOR BEDTOOLS
+                        ch_genome_sizes_danpos
 
     script:
     blacklist_filter = params.blacklist ? "sortBed -i ${params.blacklist} -g ${fasta}.sizes | complementBed -i stdin -g ${fasta}.sizes" : "awk '{print \$1, '0' , \$2}' OFS='\t' ${fasta}.sizes"
@@ -597,7 +598,8 @@ process mergeBAM {
 
     output:
     set val(name), file("*${prefix}.sorted.{bam,bam.bai}") into ch_merge_bam_filter,
-                                                                ch_merge_bam_preseq
+                                                                ch_merge_bam_preseq,
+                                                                ch_merge_bam_metrics
     file "*.{flagstat,idxstats,stats}" into ch_merge_bam_stats_mqc
     file "*.txt" into ch_merge_bam_metrics_mqc
 
@@ -716,7 +718,9 @@ process filterBAM {
  */
 if (params.singleEnd){
     ch_filter_bam.into { ch_rm_orphan_bam_metrics;
-                         ch_rm_orphan_bam_bigwig }
+                         ch_rm_orphan_bam_plotfingerprint;
+                         ch_rm_orphan_bam_bigwig;
+                         ch_rm_orphan_name_bam_danpos }
     ch_filter_bam_flagstat.into { ch_rm_orphan_flagstat_bigwig;
                                   ch_rm_orphan_flagstat_mqc }
     ch_filter_bam_stats_mqc.set { ch_rm_orphan_stats_mqc }
@@ -739,8 +743,9 @@ if (params.singleEnd){
 
         output:
         set val(name), file("*.sorted.{bam,bam.bai}") into ch_rm_orphan_bam_metrics,
+                                                           ch_rm_orphan_bam_plotfingerprint,
                                                            ch_rm_orphan_bam_bigwig
-        set val(name), file("${prefix}.bam") into ch_rm_orphan_name_bam_counts
+        set val(name), file("${prefix}.bam") into ch_rm_orphan_name_bam_danpos
         set val(name), file("*.flagstat") into ch_rm_orphan_flagstat_bigwig,
                                                ch_rm_orphan_flagstat_mqc
         file "*.{idxstats,stats}" into ch_rm_orphan_stats_mqc
@@ -768,7 +773,7 @@ if (params.singleEnd){
 ///////////////////////////////////////////////////////////////////////////////
 
 /*
- * STEP 5.1 preseq analysis after merging libraries and before filtering
+ * STEP 5.1 Preseq analysis after merging libraries and before filtering
  */
 process preseq {
     tag "$name"
@@ -794,7 +799,49 @@ process preseq {
 /*
  * STEP 5.2 Picard CollectMultipleMetrics after merging libraries and filtering
  */
-process collectMultipleMetrics {
+process collectMultipleMetricsPreFilter {
+    tag "$name"
+    label 'process_medium'
+    publishDir path: "${params.outdir}/bwa/mergedLibrary", mode: 'copy',
+        saveAs: { filename ->
+            if (filename.endsWith("_metrics")) "picard_metrics/$filename"
+            else if (filename.endsWith(".pdf")) "picard_metrics/pdf/$filename"
+            else null
+        }
+
+    when:
+    !params.skipPicardMetrics
+
+    input:
+    set val(name), file(bam) from ch_merge_bam_metrics
+    file fasta from ch_fasta
+
+    output:
+    file "*_metrics" into ch_collectmetrics_prefilter_mqc
+    file "*.pdf" into ch_collectmetrics_prefilter_pdf
+
+    script:
+    prefix="${name}.mLb.mkD"
+    if (!task.memory){
+        log.info "[Picard CollectMultipleMetrics] Available memory not known - defaulting to 3GB. Specify process memory requirements to change this."
+        avail_mem = 3
+    } else {
+        avail_mem = task.memory.toGiga()
+    }
+    """
+    picard -Xmx${avail_mem}g CollectMultipleMetrics \\
+        INPUT=${bam[0]} \\
+        OUTPUT=${prefix}.CollectMultipleMetrics \\
+        REFERENCE_SEQUENCE=$fasta \\
+        VALIDATION_STRINGENCY=LENIENT \\
+        TMP_DIR=tmp
+    """
+}
+
+/*
+ * STEP 5.3 Picard CollectMultipleMetrics after merging libraries and filtering
+ */
+process collectMultipleMetricsPostFilter {
     tag "$name"
     label 'process_medium'
     publishDir path: "${params.outdir}/bwa/mergedLibrary", mode: 'copy',
@@ -812,8 +859,8 @@ process collectMultipleMetrics {
     file fasta from ch_fasta
 
     output:
-    file "*_metrics" into ch_collectmetrics_mqc
-    file "*.pdf" into ch_collectmetrics_pdf
+    file "*_metrics" into ch_collectmetrics_postfilter_mqc
+    file "*.pdf" into ch_collectmetrics_postfilter_pdf
 
     script:
     prefix="${name}.mLb.clN"
@@ -834,7 +881,42 @@ process collectMultipleMetrics {
 }
 
 /*
- * STEP 5.3 Read depth normalised bigWig
+ * STEP 5.4 deepTools plotFingerprint
+ */
+process plotFingerprint {
+    tag "$name"
+    label 'process_high'
+    publishDir "${params.outdir}/bwa/mergedLibrary/deepTools/plotFingerprint", mode: 'copy'
+
+    when:
+    !params.skipPlotFingerprint
+
+    input:
+    set val(name), file(bam) from ch_rm_orphan_bam_plotfingerprint
+
+    output:
+    file '*.{txt,pdf}' into ch_plotfingerprint_results
+    file '*.raw.txt' into ch_plotfingerprint_mqc
+
+    script:
+    prefix="${name}.mLb.clN"
+    extend = (params.singleEnd && params.fragment_size > 0) ? "--extendReads ${params.fragment_size}" : ''
+    """
+    plotFingerprint \\
+        --bamfiles ${bam[0]} \\
+        --plotFile ${prefix}.plotFingerprint.pdf \\
+        $extend \\
+        --labels $name \\
+        --outRawCounts ${prefix}.plotFingerprint.raw.txt \\
+        --outQualityMetrics ${prefix}.plotFingerprint.qcmetrics.txt \\
+        --skipZeros \\
+        --numberOfProcessors ${task.cpus} \\
+        --numberOfSamples ${params.fingerprint_bins}
+    """
+}
+
+/*
+ * STEP 5.5 Read depth normalised bigWig
  */
 process bigWig {
     tag "$name"
@@ -870,8 +952,84 @@ process bigWig {
     """
 }
 
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+/* --                                                                     -- */
+/* --                             DANPOS                                  -- */
+/* --                                                                     -- */
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
 /*
- * STEP 5.4 generate gene body coverage plot with deepTools
+ * STEP 6.1 Convert bam to bed
+ */
+process bamToBED {
+    tag "$name"
+    label 'process_low'
+
+    input:
+    set val(name), file(bam) from ch_rm_orphan_name_bam_danpos
+
+    output:
+    set val(name), file("*.bed") into ch_bam_to_bed
+
+    script:
+    prefix="${name}.mLb.clN"
+    ibam = params.singleEnd ? bam[0] : bam
+    """
+    bamToBed -i $ibam > ${prefix}.bed
+    """
+}
+
+/*
+* STEP 6.2 run DANPOS2
+ */
+process danpos {
+    tag "$name"
+    label 'process_medium'
+    publishDir "${params.outdir}/bwa/mergedLibrary/danpos", mode: 'copy',
+        saveAs: {filename ->
+                    if (filename.endsWith(".bigWig")) "$filename"
+                    else if (filename.endsWith(".xls")) "$filename"
+                    else if (filename.endsWith(".bed")) "$filename"
+                    else null
+                }
+
+    input:
+    set val(name), file(bed) from ch_bam_to_bed
+    file sizes from ch_genome_sizes_danpos.collect()
+
+    output:
+    set val(name), file("*.{xls,bed}") into ch_danpos_results
+    set val(name), file("*.bigWig") into ch_danpos_bigwig
+    file "*igv.txt" into ch_danpos_bigwig_igv
+
+    script:
+    prefix="${name}.mLb.clN"
+    pe_params = params.singleEnd ? "" : "--paired 1"
+    """
+    danpos.py dpos \\
+        $bed \\
+        --span 1 \\
+        --smooth_width 20 \\
+        --width 40 \\
+        --count 1000000 \\
+        --out ./result/ \\
+        $pe_params
+    mv ./result/*/* .
+
+    wigToBigWig -clip ${prefix}.Fnor.smooth.wig $sizes ${prefix}.Fnor.smooth.bigWig
+
+    awk -v FS='\t' -v OFS='\t' 'FNR > 1 { print \$1, \$2-1, \$3, "Interval_"NR-1, \$6, "+" }' ${prefix}.Fnor.smooth.positions.xls > ${prefix}.Fnor.smooth.positions.bed
+    awk -v FS='\t' -v OFS='\t' 'FNR > 1 { print \$1, \$4-1, \$4, "Interval_"NR-1, \$6, "+" }' ${prefix}.Fnor.smooth.positions.xls > ${prefix}.Fnor.smooth.positions.summit.bed
+
+    find * -type f -name "*.bigWig" -exec echo -e "bwa/mergedLibrary/danpos/"{}"\\t0,0,178" \\; > ${prefix}.danpos.bigWig.igv.txt
+    find * -type f -name "*.bed" -exec echo -e "bwa/mergedLibrary/danpos/"{}"\\t0,0,178" \\; > ${prefix}.danpos.bed.igv.txt
+    """
+}
+
+/*
+ * STEP 6.3 Generate danpos bigwig coverage plot with deepTools
  */
 process plotProfile {
     tag "$name"
@@ -882,182 +1040,33 @@ process plotProfile {
     !params.skipPlotProfile
 
     input:
-    set val(name), file(bigwig) from ch_bigwig_plotprofile
+    set val(name), file(bigwig) from ch_danpos_bigwig
     file bed from ch_gene_bed
 
     output:
     file '*.{gz,pdf}' into ch_plotprofile_results
-    file '*.plotProfile.tab' into ch_plotprofile_mqc
+    //file '*.plotProfile.tab' into ch_plotprofile_mqc
 
     script:
+    prefix="${name}.mLb.clN"
     """
-    computeMatrix scale-regions \\
+    computeMatrix reference-point \\
         --regionsFileName $bed \\
         --scoreFileName $bigwig \\
-        --outFileName ${name}.computeMatrix.mat.gz \\
-        --outFileNameMatrix ${name}.computeMatrix.vals.mat.gz \\
-        --regionBodyLength 1000 \\
-        --beforeRegionStartLength 3000 \\
-        --afterRegionStartLength 3000 \\
+        --outFileName ${prefix}.computeMatrix.mat.gz \\
+        --outFileNameMatrix ${prefix}.computeMatrix.vals.mat.gz \\
+        --referencePoint TSS \\
+        --beforeRegionStartLength 1000 \\
+        --afterRegionStartLength 1000 \\
         --skipZeros \\
-        --smartLabels \\
+        --samplesLabel $name \\
         -p $task.cpus
 
-    plotProfile --matrixFile ${name}.computeMatrix.mat.gz \\
-        --outFileName ${name}.plotProfile.pdf \\
-        --outFileNameData ${name}.plotProfile.tab
+    plotProfile --matrixFile ${prefix}.computeMatrix.mat.gz \\
+        --outFileName ${prefix}.plotProfile.pdf \\
+        --outFileNameData ${prefix}.plotProfile.tab
     """
 }
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-/* --                                                                     -- */
-/* --                 MERGE LIBRARY PEAK ANALYSIS                         -- */
-/* --                                                                     -- */
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
-// // Create channel linking IP bams with control bams
-// ch_rm_orphan_bam_macs_1.combine(ch_rm_orphan_bam_macs_2)
-//                        .set { ch_rm_orphan_bam_macs_1 }
-// ch_design_controls_csv.combine(ch_rm_orphan_bam_macs_1)
-//                       .filter { it[0] == it[5] && it[1] == it[7] }
-//                       .join(ch_rm_orphan_flagstat_macs)
-//                       .map { it ->  it[2..-1] }
-//                       .into { ch_group_bam_macs;
-//                               ch_group_bam_plotfingerprint;
-//                               ch_group_bam_deseq }
-//
-// /*
-//  * STEP 6.1 deepTools plotFingerprint
-//  */
-// process plotFingerprint {
-//     tag "${ip} vs ${control}"
-//     label 'process_high'
-//     publishDir "${params.outdir}/bwa/mergedLibrary/deepTools/plotFingerprint", mode: 'copy'
-//
-//     when:
-//     !params.skipPlotFingerprint
-//
-//     input:
-//     set val(antibody), val(replicatesExist), val(multipleGroups), val(ip), file(ipbam), val(control), file(controlbam), file(ipflagstat) from ch_group_bam_plotfingerprint
-//
-//     output:
-//     file '*.{txt,pdf}' into ch_plotfingerprint_results
-//     file '*.raw.txt' into ch_plotfingerprint_mqc
-//
-//     script:
-//     extend = (params.singleEnd && params.fragment_size > 0) ? "--extendReads ${params.fragment_size}" : ''
-//     """
-//     plotFingerprint \\
-//         --bamfiles ${ipbam[0]} ${controlbam[0]} \\
-//         --plotFile ${ip}.plotFingerprint.pdf \\
-//         $extend \\
-//         --labels $ip $control \\
-//         --outRawCounts ${ip}.plotFingerprint.raw.txt \\
-//         --outQualityMetrics ${ip}.plotFingerprint.qcmetrics.txt \\
-//         --skipZeros \\
-//         --JSDsample ${controlbam[0]} \\
-//         --numberOfProcessors ${task.cpus} \\
-//         --numberOfSamples ${params.fingerprint_bins}
-//     """
-// }
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-/* --                                                                     -- */
-/* --                             DANPOS                                  -- */
-/* --                                                                     -- */
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
-// /*
-//  * STEP 5.4 Convert bam to bed
-//  */
-// process replicate_bam_to_bed {
-//     tag "$name"
-//
-//     input:
-//     set val(name), file(bam) from replicate_name_bam_to_bed
-//
-//     output:
-//     set val(name), file("*.bed") into replicate_bam_bed
-//
-//     script:
-//     prefix="${name}.mRp"
-//     """
-//     bamToBed -i ${bam[0]} > ${prefix}.bed
-//     """
-// }
-//
-// /*
-// * STEP 5.5 run DANPOS2
-//  */
-// process replicate_danpos {
-//     tag "$name"
-//     publishDir "${params.outdir}/bwa/replicate/danpos/", mode: 'copy',
-//        saveAs: {filename ->
-//                    if (filename.endsWith(".bigWig")) "$filename"
-//                    else if (filename.endsWith(".xls")) "$filename"
-//                    else null
-//                }
-//
-//     input:
-//     set val(name), file(bed) from replicate_bam_bed
-//     file sizes from genome_replicate_danpos.collect()
-//
-//     output:
-//     set val(name), file("*.xls") into replicate_danpos_xls
-//     set val(name), file("*.bigWig") into replicate_danpos_bigwig
-//
-//     script:
-//     prefix="${name}.mRp"
-//     pe_params = params.singleEnd ? "" : "--paired 1"
-//     """
-//     danpos.py dpos \\
-//              $bed \\
-//              --span 1 \\
-//              --smooth_width 20 \\
-//              --width 40 \\
-//              --count 1000000 \\
-//              --out ./result/ \\
-//              $pe_params
-//     mv ./result/*/* .
-//     wigToBigWig -clip ${prefix}.Fnor.smooth.wig $sizes ${prefix}.Fnor.smooth.bigWig
-//     """
-// }
-//
-// /*
-//  * STEP 5.6 generate TSS profiles with deeptools
-//  */
-// process replicate_tss_plot {
-//     publishDir "${params.outdir}/bwa/replicate/deeptools", mode: 'copy'
-//
-//     input:
-//     file bigwigs from replicate_danpos_bigwig.collect{it[1]}
-//     file bed from bed12_replicate_deeptools.collect()
-//
-//     output:
-//     file "*.png" into replicate_tss_plot
-//
-//     script:
-//     suffix='mRp'
-//     prefix="plotProfile.${suffix}"
-//     """
-//     computeMatrix reference-point \\
-//                   -R $bed \\
-//                   -S ${bigwigs.collect{it.toString()}.sort().join(' ')} \\
-//                   --samplesLabel ${bigwigs.collect{it.toString()}.sort().join(' ').replaceAll(".${suffix}.Fnor.smooth.bigWig","")} \\
-//                   -out ${prefix}.TSS.mat.gz \\
-//                   --referencePoint TSS \\
-//                   -a 3000 \\
-//                   -b 3000 \\
-//                   -p $task.cpus
-//     plotProfile -m ${prefix}.TSS.mat.gz \\
-//                 -out ${prefix}.TSS.png
-//     """
-// }
-
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -1068,7 +1077,7 @@ process plotProfile {
 ///////////////////////////////////////////////////////////////////////////////
 
 /*
- * STEP 8 - Create IGV session file
+ * STEP 7 - Create IGV session file
  */
 process igv {
     publishDir "${params.outdir}/igv", mode: 'copy'
@@ -1079,6 +1088,7 @@ process igv {
     input:
     file fasta from ch_fasta
     file bigwigs from ch_bigwig_igv.collect().ifEmpty([])
+    file danpos from ch_danpos_bigwig_igv.collect().ifEmpty([])
 
     output:
     file "*.{txt,xml}" into ch_igv_session
@@ -1152,7 +1162,7 @@ ${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style
 }
 
 /*
- * STEP 9 - MultiQC
+ * STEP 8 - MultiQC
  */
 process multiqc {
     publishDir "${params.outdir}/multiqc", mode: 'copy'
@@ -1172,11 +1182,11 @@ process multiqc {
     file ('alignment/mergedLibrary/*') from ch_rm_orphan_flagstat_mqc.collect{it[1]}
     file ('alignment/mergedLibrary/*') from ch_rm_orphan_stats_mqc.collect()
     file ('alignment/mergedLibrary/picard_metrics/*') from ch_merge_bam_metrics_mqc.collect()
-    file ('alignment/mergedLibrary/picard_metrics/*') from ch_collectmetrics_mqc.collect()
+    file ('alignment/mergedLibrary/picard_metrics/*') from ch_collectmetrics_prefilter_mqc.collect()
+    file ('alignment/mergedLibrary/picard_metrics/*') from ch_collectmetrics_postfilter_mqc.collect()
 
     file ('preseq/*') from ch_preseq_results.collect().ifEmpty([])
-    //file ('deeptools/*') from ch_plotfingerprint_mqc.collect().ifEmpty([])
-    file ('deeptools/*') from ch_plotprofile_mqc.collect().ifEmpty([])
+    file ('deeptools/*') from ch_plotfingerprint_mqc.collect().ifEmpty([])
     file ('software_versions/*') from ch_software_versions_mqc.collect()
     file ('workflow_summary/*') from create_workflow_summary(summary)
 
@@ -1205,7 +1215,7 @@ process multiqc {
 ///////////////////////////////////////////////////////////////////////////////
 
 /*
- * STEP 10 - Output description HTML
+ * STEP 9 - Output description HTML
  */
 process output_documentation {
     publishDir "${params.outdir}/Documentation", mode: 'copy'

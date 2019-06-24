@@ -34,23 +34,11 @@ The pipeline is built using [Nextflow](https://www.nextflow.io), a workflow tool
         * reads where only one read of the pair fails the above criteria ([`Pysam`](http://pysam.readthedocs.io/en/latest/installation.html); *paired-end only*)
     3. Alignment-level QC and estimation of library complexity ([`picard`](https://broadinstitute.github.io/picard/), [`Preseq`](http://smithlabresearch.org/software/preseq/))
     4. Create normalised bigWig files scaled to 1 million mapped reads ([`BEDTools`](https://github.com/arq5x/bedtools2/), [`bedGraphToBigWig`](http://hgdownload.soe.ucsc.edu/admin/exe/))
-    5. Generate gene-body meta-profile from bigWig files ([`deepTools`](https://deeptools.readthedocs.io/en/develop/content/tools/plotProfile.html))
-    6. Calculate genome-wide coverage assessment ([`deepTools`](https://deeptools.readthedocs.io/en/develop/content/tools/plotFingerprint.html))
-    7. Call nucleosome positions and generate smoothed, normalised coverage wig files that can be used to generate occupancy profile plots between samples across features of interest ([`DANPOS2`](https://sites.google.com/site/danposdoc/))
-6. Create IGV session file containing bigWig tracks, peaks and differential sites for data visualisation ([`IGV`](https://software.broadinstitute.org/software/igv/)).
+    5. Calculate genome-wide coverage assessment ([`deepTools`](https://deeptools.readthedocs.io/en/develop/content/tools/plotFingerprint.html))
+    6. Call nucleosome positions and generate smoothed, normalised coverage wig files that can be used to generate occupancy profile plots between samples across features of interest ([`DANPOS2`](https://sites.google.com/site/danposdoc/))
+    7. Generate gene-body meta-profile from DANPOS2 smoothed bigWig files ([`deepTools`](https://deeptools.readthedocs.io/en/develop/content/tools/plotProfile.html))
+6. Create IGV session file containing bigWig tracks for data visualisation ([`IGV`](https://software.broadinstitute.org/software/igv/)).
 7. Present QC for raw read and alignment results ([`MultiQC`](http://multiqc.info/))
-
-## Documentation
-The nf-core/mnaseseq pipeline comes with documentation about the pipeline, found in the `docs/` directory:
-
-1. [Installation](https://nf-co.re/usage/installation)
-2. Pipeline configuration
-    * [Local installation](https://nf-co.re/usage/local_installation)
-    * [Adding your own system config](https://nf-co.re/usage/adding_own_config)
-    * [Reference genomes](https://nf-co.re/usage/reference_genomes)
-3. [Running the pipeline](docs/usage.md)
-4. [Output and how to interpret the results](docs/output.md)
-5. [Troubleshooting](https://nf-co.re/usage/troubleshooting)
 
 ## Quick Start
 
@@ -71,6 +59,18 @@ nextflow run nf-core/mnaseseq -profile <docker/singularity/conda> --design desig
 ```
 
 See [usage docs](docs/usage.md) for all of the available options when running the pipeline.
+
+## Documentation
+The nf-core/mnaseseq pipeline comes with documentation about the pipeline, found in the `docs/` directory:
+
+1. [Installation](https://nf-co.re/usage/installation)
+2. Pipeline configuration
+    * [Local installation](https://nf-co.re/usage/local_installation)
+    * [Adding your own system config](https://nf-co.re/usage/adding_own_config)
+    * [Reference genomes](https://nf-co.re/usage/reference_genomes)
+3. [Running the pipeline](docs/usage.md)
+4. [Output and how to interpret the results](docs/output.md)
+5. [Troubleshooting](https://nf-co.re/usage/troubleshooting)
 
 ## Credits
 
