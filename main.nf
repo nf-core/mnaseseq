@@ -61,6 +61,7 @@ def helpMessage() {
       --skipPreseq                  Skip Preseq
       --skipPlotProfile             Skip deepTools plotProfile
       --skipPlotFingerprint         Skip deepTools plotFingerprint
+      --skipDANPOS                  Skip DANPOS2
       --skipIGV                     Skip IGV
       --skipMultiQC                 Skip MultiQC
       --skipMultiQCStats            Exclude general statistics table from MultiQC report
@@ -222,6 +223,7 @@ if (params.skipPicardMetrics)   summary['Skip Picard Metrics'] = 'Yes'
 if (params.skipPreseq)          summary['Skip Preseq'] = 'Yes'
 if (params.skipPlotProfile)     summary['Skip plotProfile'] = 'Yes'
 if (params.skipPlotFingerprint) summary['Skip plotFingerprint'] = 'Yes'
+if (params.skipDANPOS)          summary['Skip DANPOS2'] = 'Yes'
 if (params.skipIGV)             summary['Skip IGV'] = 'Yes'
 if (params.skipMultiQC)         summary['Skip MultiQC'] = 'Yes'
 if (params.skipMultiQCStats)    summary['Skip MultiQC Stats'] = 'Yes'
@@ -458,7 +460,7 @@ if (params.skipTrimming){
         publishDir "${params.outdir}/trim_galore", mode: 'copy',
             saveAs: {filename ->
                 if (filename.endsWith(".html")) "fastqc/$filename"
-                else if (filename.endsWith(".zip")) "fastqc/zip/$filename"
+                else if (filename.endsWith(".zip")) "fastqc/zips/$filename"
                 else if (filename.endsWith("trimming_report.txt")) "logs/$filename"
                 else params.saveTrimmed ? filename : null
             }
@@ -967,6 +969,9 @@ process bamToBED {
     tag "$name"
     label 'process_low'
 
+    when:
+    !params.skipDANPOS
+
     input:
     set val(name), file(bam) from ch_rm_orphan_name_bam_danpos
 
@@ -994,6 +999,9 @@ process danpos {
                     else if (filename.endsWith(".bed")) "$filename"
                     else null
                 }
+
+    when:
+    !params.skipDANPOS
 
     input:
     set val(name), file(bed) from ch_bam_to_bed
@@ -1037,7 +1045,7 @@ process plotProfile {
     publishDir "${params.outdir}/bwa/mergedLibrary/deepTools/plotProfile", mode: 'copy'
 
     when:
-    !params.skipPlotProfile
+    !params.skipPlotProfile && !params.skipDANPOS
 
     input:
     set val(name), file(bigwig) from ch_danpos_bigwig
@@ -1045,7 +1053,7 @@ process plotProfile {
 
     output:
     file '*.{gz,pdf}' into ch_plotprofile_results
-    //file '*.plotProfile.tab' into ch_plotprofile_mqc
+    file '*.tab' into ch_plotprofile_mqc
 
     script:
     prefix="${name}.mLb.clN"
