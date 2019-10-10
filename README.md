@@ -1,4 +1,4 @@
-# ![nfcore/mnaseseq](docs/images/nfcore-mnaseseq_logo.png)
+# ![nfcore/mnaseseq](docs/images/nf-core-mnaseseq_logo.png)
 
 [![Build Status](https://travis-ci.com/nf-core/mnaseseq.svg?branch=master)](https://travis-ci.com/nf-core/mnaseseq)
 [![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A50.32.0-brightgreen.svg)](https://www.nextflow.io/)
@@ -61,6 +61,7 @@ nextflow run nf-core/mnaseseq -profile <docker/singularity/conda> --design desig
 See [usage docs](docs/usage.md) for all of the available options when running the pipeline.
 
 ## Documentation
+
 The nf-core/mnaseseq pipeline comes with documentation about the pipeline, found in the `docs/` directory:
 
 1. [Installation](https://nf-co.re/usage/installation)
@@ -78,10 +79,18 @@ The pipeline was originally written by the [The Bioinformatics & Biostatistics G
 
 The pipeline was developed by [Harshil Patel](mailto:harshil.patel@crick.ac.uk).
 
+Many thanks to others who have helped out along the way too, including (but not limited to): [@crickbabs](https://github.com/crickbabs).
+
+## Contributions and Support
+
+If you would like to contribute to this pipeline, please see the [contributing guidelines](.github/CONTRIBUTING.md).
+
+For further information or help, don't hesitate to get in touch on [Slack](https://nfcore.slack.com/channels/mnaseseq) (you can join with [this invite](https://nf-co.re/join/slack)).
+
 ## Citation
 
 <!-- TODO nf-core: Add citation for pipeline after first release. Uncomment lines below and update Zenodo doi. -->
-<!-- If you use  {{ cookiecutter.name }} for your analysis, please cite it using the following doi: [10.5281/zenodo.XXXXXX](https://doi.org/10.5281/zenodo.XXXXXX) -->
+<!-- If you use nf-core/mnaseseq for your analysis, please cite it using the following doi: [10.5281/zenodo.XXXXXX](https://doi.org/10.5281/zenodo.XXXXXX) -->
 
 You can cite the `nf-core` pre-print as follows:  
-Ewels PA, Peltzer A, Fillinger S, Alneberg JA, Patel H, Wilm A, Garcia MU, Di Tommaso P, Nahnsen S. **nf-core: Community curated bioinformatics pipelines**. *bioRxiv*. 2019. p. 610741. [doi: 10.1101/610741](https://www.biorxiv.org/content/10.1101/610741v1).
+> Ewels PA, Peltzer A, Fillinger S, Alneberg JA, Patel H, Wilm A, Garcia MU, Di Tommaso P, Nahnsen S. **nf-core: Community curated bioinformatics pipelines**. *bioRxiv*. 2019. p. 610741. [doi: 10.1101/610741](https://www.biorxiv.org/content/10.1101/610741v1).
