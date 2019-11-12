@@ -3,7 +3,6 @@ from __future__ import print_function
 from collections import OrderedDict
 import re
 
-# TODO nf-core: Add additional regexes for new tools in process get_software_versions
 regexes = {
     'nf-core/mnaseseq': ['v_pipeline.txt', r"(\S+)"],
     'Nextflow': ['v_nextflow.txt', r"(\S+)"],
@@ -13,14 +12,15 @@ regexes = {
     'Samtools': ['v_samtools.txt', r"samtools (\S+)"],
     'BEDTools': ['v_bedtools.txt', r"bedtools v(\S+)"],
     'BamTools': ['v_bamtools.txt', r"bamtools (\S+)"],
+    'deepTools': ['v_deeptools.txt', r"computeMatrix (\S+)"],
     'Picard': ['v_picard.txt', r"([\d\.]+)-SNAPSHOT"],
     'Preseq': ['v_preseq.txt', r"Version: (\S+)"],
     'R': ['v_R.txt', r"R version (\S+)"],
     'Pysam': ['v_pysam.txt', r"(\S+)"],
     'DANPOS2': ['v_danpos.txt', r"danpos version (\S+)"],
-    'deepTools': ['v_deeptools.txt', r"computeMatrix (\S+)"],
     'MultiQC': ['v_multiqc.txt', r"multiqc, version (\S+)"],
 }
+
 results = OrderedDict()
 results['nf-core/mnaseseq'] = '<span style="color:#999999;\">N/A</span>'
 results['Nextflow'] = '<span style="color:#999999;\">N/A</span>'
@@ -30,12 +30,12 @@ results['BWA'] = '<span style="color:#999999;\">N/A</span>'
 results['Samtools'] = '<span style="color:#999999;\">N/A</span>'
 results['BEDTools'] = '<span style="color:#999999;\">N/A</span>'
 results['BamTools'] = '<span style="color:#999999;\">N/A</span>'
+results['deepTools'] = '<span style="color:#999999;\">N/A</span>'
 results['Picard'] = '<span style="color:#999999;\">N/A</span>'
 results['Preseq'] = '<span style="color:#999999;\">N/A</span>'
 results['R'] = '<span style="color:#999999;\">N/A</span>'
 results['Pysam'] = '<span style="color:#999999;\">N/A</span>'
 results['DANPOS2'] = '<span style="color:#999999;\">N/A</span>'
-results['deepTools'] = '<span style="color:#999999;\">N/A</span>'
 results['MultiQC'] = '<span style="color:#999999;\">N/A</span>'
 
 # Search each file using its regex
