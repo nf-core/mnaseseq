@@ -398,8 +398,8 @@ process MakeGenomeFilter {
     file "*.fai"                                       // FAI INDEX FOR REFERENCE GENOME
     file "*.bed" into ch_genome_filter_regions         // BED FILE WITHOUT BLACKLIST REGIONS & MITOCHONDRIAL CONTIG FOR FILTERING
     file "*.sizes" into ch_genome_sizes_mlib_bigwig,   // CHROMOSOME SIZES FILE FOR BEDTOOLS
-                        ch_genome_sizes_mrep_bigwig
-                        //ch_genome_sizes_danpos
+                        ch_genome_sizes_mrep_bigwig,
+                        ch_genome_sizes_mlib_danpos
 
     script:
     blacklist_filter = params.blacklist ? "sortBed -i $blacklist -g ${fasta}.sizes | complementBed -i stdin -g ${fasta}.sizes" : "awk '{print \$1, '0' , \$2}' OFS='\t' ${fasta}.sizes"
@@ -1043,7 +1043,7 @@ process MergedLibBAMToBED {
     set val(name), file(bam) from ch_mlib_name_bam_danpos
 
     output:
-    set val(name), file("*.bed") into ch_bam_to_bed
+    set val(name), file("*.bed") into ch_mlib_bam_to_bed
 
     script:
     prefix="${name}.mLb.clN"
@@ -1053,7 +1053,95 @@ process MergedLibBAMToBED {
     """
 }
 
+/*
+* STEP 6.2 run DANPOS2
+ */
+process MergedLibDANPOS2 {
+    tag "$name"
+    label 'process_medium'
+    publishDir "${params.outdir}/bwa/mergedLibrary/danpos", mode: 'copy',
+        saveAs: {filename ->
+                    if (filename.endsWith(".bigWig")) "$filename"
+                    else if (filename.endsWith(".xls")) "$filename"
+                    else if (filename.endsWith(".bed")) "$filename"
+                    else null
+                }
 
+    when:
+    !params.skip_danpos
+
+    input:
+    set val(name), file(bed) from ch_mlib_bam_to_bed
+    file sizes from ch_genome_sizes_mlib_danpos.collect()
+
+    output:
+    set val(name), file("*.{xls,bed}")
+    set val(name), file("*.bigWig") into ch_mlib_danpos_bigwig
+    file "*igv.txt" into ch_mlib_danpos_bigwig_igv
+
+    script:
+    prefix="${name}.mLb.clN"
+    pe_params = params.single_end ? "" : "--paired 1"
+    """
+    danpos.py dpos \\
+        $bed \\
+        --span 1 \\
+        --smooth_width 20 \\
+        --width 40 \\
+        --count 1000000 \\
+        --out ./result/ \\
+        $pe_params
+    mv ./result/*/* .
+
+    wigToBigWig -clip ${prefix}.Fnor.smooth.wig $sizes ${prefix}.Fnor.smooth.bigWig
+
+    awk -v FS='\t' -v OFS='\t' 'FNR > 1 { print \$1, \$2-1, \$3, "Interval_"NR-1, \$6, "+" }' ${prefix}.Fnor.smooth.positions.xls > ${prefix}.Fnor.smooth.positions.bed
+    awk -v FS='\t' -v OFS='\t' 'FNR > 1 { print \$1, \$4-1, \$4, "Interval_"NR-1, \$6, "+" }' ${prefix}.Fnor.smooth.positions.xls > ${prefix}.Fnor.smooth.positions.summit.bed
+
+    find * -type f -name "*.bigWig" -exec echo -e "bwa/mergedLibrary/danpos/"{}"\\t0,0,178" \\; > ${prefix}.danpos.bigWig.igv.txt
+    find * -type f -name "*.bed" -exec echo -e "bwa/mergedLibrary/danpos/"{}"\\t0,0,178" \\; > ${prefix}.danpos.bed.igv.txt
+    """
+}
+
+/*
+ * STEP 6.3 Generate danpos bigwig coverage plot with deepTools
+ */
+process MergedLibDANPOS2PlotProfile {
+    tag "$name"
+    label 'process_high'
+    publishDir "${params.outdir}/bwa/mergedLibrary/danpos/plotProfile", mode: 'copy'
+
+    when:
+    !params.skip_plot_profile && !params.skip_danpos
+
+    input:
+    set val(name), file(bigwig) from ch_mlib_danpos_bigwig
+    file bed from ch_gene_bed
+
+    output:
+    file '*.{gz,pdf}'
+    file '*.tab' into ch_mlib_danpos_plotprofile_mqc
+
+    script:
+    prefix="${name}.mLb.clN"
+    """
+    computeMatrix reference-point \\
+        --regionsFileName $bed \\
+        --scoreFileName $bigwig \\
+        --outFileName ${prefix}.computeMatrix.mat.gz \\
+        --outFileNameMatrix ${prefix}.computeMatrix.vals.mat.gz \\
+        --referencePoint TSS \\
+        --beforeRegionStartLength 1000 \\
+        --afterRegionStartLength 1000 \\
+        --skipZeros \\
+        --samplesLabel $name \\
+        --numberOfProcessors $task.cpus
+
+    plotProfile --matrixFile ${prefix}.computeMatrix.mat.gz \\
+        --outFileName ${prefix}.plotProfile.pdf \\
+        --outFileNameData ${prefix}.plotProfile.tab
+    """
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -1224,10 +1312,10 @@ process MergedLibBAMToBED {
 //     file fasta from ch_fasta
 //
 //     file bigwigs from ch_mlib_bigwig_igv.collect().ifEmpty([])
-//     //file danpos from ch_danpos_bigwig_igv.collect().ifEmpty([])
+//     //file danpos from ch_mlib_danpos_bigwig_igv.collect().ifEmpty([])
 //
 //     file rbigwigs from ch_mrep_bigwig_igv.collect().ifEmpty([])
-//     //file danpos from ch_danpos_bigwig_igv.collect().ifEmpty([])
+//     //file danpos from ch_mrep_danpos_bigwig_igv.collect().ifEmpty([])
 //
 //     output:
 //     file "*.{txt,xml}" into ch_igv_session
@@ -1329,8 +1417,9 @@ process MergedLibBAMToBED {
 //     file ('alignment/mergedLibrary/picard_metrics/*') from ch_mlib_collectmetrics_postfilter_mqc.collect()
 
 //     file ('preseq/*') from ch_mlib_preseq_mqc.collect().ifEmpty([])
-//     file ('deeptools/*') from ch_mlib_plotprofile_mqc.collect().ifEmpty([])
 //     file ('deeptools/*') from ch_mlib_plotfingerprint_mqc.collect().ifEmpty([])
+//     file ('deeptools/*') from ch_mlib_plotprofile_mqc.collect().ifEmpty([])
+//     file ('deeptools/danpos/*') from ch_mlib_danpos_plotprofile_mqc.collect().ifEmpty([])
 //
 //     file ('alignment/mergedReplicate/*') from ch_mrep_bam_flagstat_mqc.collect{it[1]}.ifEmpty([])
 //     file ('alignment/mergedReplicate/*') from ch_mrep_bam_stats_mqc.collect().ifEmpty([])
