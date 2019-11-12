@@ -927,7 +927,7 @@ process MergedLibBigWig {
     file sizes from ch_genome_sizes_mlib_bigwig.collect()
 
     output:
-    set val(name), file("*.bigWig") into ch_mlib_bigwig_plotprofile
+    file "*.bigWig"
     file "*scale_factor.txt"
     file "*igv.txt" into ch_mlib_bigwig_igv
 
@@ -943,46 +943,6 @@ process MergedLibBigWig {
     bedGraphToBigWig ${prefix}.bedGraph $sizes ${prefix}.bigWig
 
     find * -type f -name "*.bigWig" -exec echo -e "bwa/mergedLibrary/bigwig/"{}"\\t0,0,178" \\; > ${prefix}.bigWig.igv.txt
-    """
-}
-
-/*
- * STEP 5.5 generate gene body coverage plot with deepTools
- */
-process MergedLibPlotProfile {
-    tag "$name"
-    label 'process_high'
-    publishDir "${params.outdir}/bwa/mergedLibrary/deepTools/plotProfile", mode: 'copy'
-
-    when:
-    !params.skip_plot_profile
-
-    input:
-    set val(name), file(bigwig) from ch_mlib_bigwig_plotprofile
-    file bed from ch_gene_bed
-
-    output:
-    file '*.{gz,pdf}'
-    file '*.plotProfile.tab' into ch_mlib_plotprofile_mqc
-
-    script:
-    prefix = "${name}.mLb.clN"
-    """
-    computeMatrix scale-regions \\
-        --regionsFileName $bed \\
-        --scoreFileName $bigwig \\
-        --outFileName ${prefix}.computeMatrix.mat.gz \\
-        --outFileNameMatrix ${prefix}.computeMatrix.vals.mat.gz \\
-        --regionBodyLength 1000 \\
-        --beforeRegionStartLength 3000 \\
-        --afterRegionStartLength 3000 \\
-        --skipZeros \\
-        --smartLabels \\
-        --numberOfProcessors $task.cpus
-
-    plotProfile --matrixFile ${prefix}.computeMatrix.mat.gz \\
-        --outFileName ${prefix}.plotProfile.pdf \\
-        --outFileNameData ${prefix}.plotProfile.tab
     """
 }
 
@@ -1030,7 +990,7 @@ process MergedLibPlotFingerprint {
 ///////////////////////////////////////////////////////////////////////////////
 
 /*
- * STEP 6.1 Convert bam to bed
+ * STEP 6.1 Convert BAM to BED
  */
 process MergedLibBAMToBED {
     tag "$name"
@@ -1054,7 +1014,7 @@ process MergedLibBAMToBED {
 }
 
 /*
-* STEP 6.2 run DANPOS2
+* STEP 6.2 Run DANPOS2
  */
 process MergedLibDANPOS2 {
     tag "$name"
@@ -1104,12 +1064,12 @@ process MergedLibDANPOS2 {
 }
 
 /*
- * STEP 6.3 Generate danpos bigwig coverage plot with deepTools
+ * STEP 6.3 Generate DANPOS2 bigWig coverage plot with deepTools
  */
-process MergedLibDANPOS2PlotProfile {
+process MergedLibPlotProfile {
     tag "$name"
     label 'process_high'
-    publishDir "${params.outdir}/bwa/mergedLibrary/danpos/plotProfile", mode: 'copy'
+    publishDir "${params.outdir}/bwa/mergedLibrary/deepTools/plotProfile", mode: 'copy'
 
     when:
     !params.skip_plot_profile && !params.skip_danpos
@@ -1120,7 +1080,7 @@ process MergedLibDANPOS2PlotProfile {
 
     output:
     file '*.{gz,pdf}'
-    file '*.tab' into ch_mlib_danpos_plotprofile_mqc
+    file '*.tab' into ch_mlib_plotprofile_mqc
 
     script:
     prefix="${name}.mLb.clN"
@@ -1150,86 +1110,86 @@ process MergedLibDANPOS2PlotProfile {
 /* --                                                                     -- */
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-//
-// /*
-//  * STEP 7 Merge library BAM files across all replicates
-//  */
-// ch_mlib_rm_orphan_bam_mrep
-//     .map { it -> [ it[0].split('_')[0..-2].join('_'), it[1] ] }
-//     .groupTuple(by: [0])
-//     .map { it ->  [ it[0], it[1].flatten() ] }
-//     .set { ch_mlib_rm_orphan_bam_mrep }
-//
-// process MergedRepBAM {
-//     tag "$name"
-//     label 'process_medium'
-//     publishDir "${params.outdir}/bwa/mergedReplicate", mode: 'copy',
-//         saveAs: { filename ->
-//                       if (filename.endsWith(".flagstat")) "samtools_stats/$filename"
-//                       else if (filename.endsWith(".idxstats")) "samtools_stats/$filename"
-//                       else if (filename.endsWith(".stats")) "samtools_stats/$filename"
-//                       else if (filename.endsWith(".metrics.txt")) "picard_metrics/$filename"
-//                       else filename
-//                 }
-//
-//     input:
-//     set val(name), file(bams) from ch_mlib_rm_orphan_bam_mrep
-//
-//     output:
-//     set val(name), file("*${prefix}.sorted.{bam,bam.bai}") into ch_mrep_bam_bigwig
-//     set val(name), file("*.flagstat") into ch_mrep_bam_flagstat_bigwig,
-//                                            ch_mrep_bam_flagstat_mqc
-//     file "*.{idxstats,stats}" into ch_mrep_bam_stats_mqc
-//     file "*.txt" into ch_mrep_bam_metrics_mqc
-//
-//     when:
-//     !params.skip_merge_replicates && replicatesExist
-//
-//     script:
-//     prefix = "${name}.mRp.clN"
-//     bam_files = bams.findAll { it.toString().endsWith('.bam') }.sort()
-//     def avail_mem = 3
-//     if (!task.memory) {
-//         log.info "[Picard MarkDuplicates] Available memory not known - defaulting to 3GB. Specify process memory requirements to change this."
-//     } else {
-//         avail_mem = task.memory.toGiga()
-//     }
-//     if (bam_files.size() > 1) {
-//         """
-//         picard -Xmx${avail_mem}g MergeSamFiles \\
-//             ${'INPUT='+bam_files.join(' INPUT=')} \\
-//             OUTPUT=${name}.sorted.bam \\
-//             SORT_ORDER=coordinate \\
-//             VALIDATION_STRINGENCY=LENIENT \\
-//             TMP_DIR=tmp
-//         samtools index ${name}.sorted.bam
-//
-//         picard -Xmx${avail_mem}g MarkDuplicates \\
-//             INPUT=${name}.sorted.bam \\
-//             OUTPUT=${prefix}.sorted.bam \\
-//             ASSUME_SORTED=true \\
-//             REMOVE_DUPLICATES=true \\
-//             METRICS_FILE=${prefix}.MarkDuplicates.metrics.txt \\
-//             VALIDATION_STRINGENCY=LENIENT \\
-//             TMP_DIR=tmp
-//
-//         samtools index ${prefix}.sorted.bam
-//         samtools flagstat ${prefix}.sorted.bam > ${prefix}.sorted.bam.flagstat
-//         samtools idxstats ${prefix}.sorted.bam > ${prefix}.sorted.bam.idxstats
-//         samtools stats ${prefix}.sorted.bam > ${prefix}.sorted.bam.stats
-//         """
-//     } else {
-//       """
-//       ln -s ${bams[0]} ${prefix}.sorted.bam
-//       ln -s ${bams[1]} ${prefix}.sorted.bam.bai
-//       touch ${prefix}.MarkDuplicates.metrics.txt
-//       samtools flagstat ${prefix}.sorted.bam > ${prefix}.sorted.bam.flagstat
-//       samtools idxstats ${prefix}.sorted.bam > ${prefix}.sorted.bam.idxstats
-//       samtools stats ${prefix}.sorted.bam > ${prefix}.sorted.bam.stats
-//       """
-//     }
-// }
-//
+
+/*
+ * STEP 7 Merge library BAM files across all replicates
+ */
+ch_mlib_rm_orphan_bam_mrep
+    .map { it -> [ it[0].split('_')[0..-2].join('_'), it[1] ] }
+    .groupTuple(by: [0])
+    .map { it ->  [ it[0], it[1].flatten() ] }
+    .set { ch_mlib_rm_orphan_bam_mrep }
+
+process MergedRepBAM {
+    tag "$name"
+    label 'process_medium'
+    publishDir "${params.outdir}/bwa/mergedReplicate", mode: 'copy',
+        saveAs: { filename ->
+                      if (filename.endsWith(".flagstat")) "samtools_stats/$filename"
+                      else if (filename.endsWith(".idxstats")) "samtools_stats/$filename"
+                      else if (filename.endsWith(".stats")) "samtools_stats/$filename"
+                      else if (filename.endsWith(".metrics.txt")) "picard_metrics/$filename"
+                      else filename
+                }
+
+    when:
+    !params.skip_merge_replicates && replicatesExist
+
+    input:
+    set val(name), file(bams) from ch_mlib_rm_orphan_bam_mrep
+
+    output:
+    set val(name), file("*${prefix}.sorted.{bam,bam.bai}") into ch_mrep_bam_bigwig
+    set val(name), file("*.flagstat") into ch_mrep_bam_flagstat_bigwig,
+                                           ch_mrep_bam_flagstat_mqc
+    file "*.{idxstats,stats}" into ch_mrep_bam_stats_mqc
+    file "*.txt" into ch_mrep_bam_metrics_mqc
+
+    script:
+    prefix = "${name}.mRp.clN"
+    bam_files = bams.findAll { it.toString().endsWith('.bam') }.sort()
+    def avail_mem = 3
+    if (!task.memory) {
+        log.info "[Picard MarkDuplicates] Available memory not known - defaulting to 3GB. Specify process memory requirements to change this."
+    } else {
+        avail_mem = task.memory.toGiga()
+    }
+    if (bam_files.size() > 1) {
+        """
+        picard -Xmx${avail_mem}g MergeSamFiles \\
+            ${'INPUT='+bam_files.join(' INPUT=')} \\
+            OUTPUT=${name}.sorted.bam \\
+            SORT_ORDER=coordinate \\
+            VALIDATION_STRINGENCY=LENIENT \\
+            TMP_DIR=tmp
+        samtools index ${name}.sorted.bam
+
+        picard -Xmx${avail_mem}g MarkDuplicates \\
+            INPUT=${name}.sorted.bam \\
+            OUTPUT=${prefix}.sorted.bam \\
+            ASSUME_SORTED=true \\
+            REMOVE_DUPLICATES=true \\
+            METRICS_FILE=${prefix}.MarkDuplicates.metrics.txt \\
+            VALIDATION_STRINGENCY=LENIENT \\
+            TMP_DIR=tmp
+
+        samtools index ${prefix}.sorted.bam
+        samtools flagstat ${prefix}.sorted.bam > ${prefix}.sorted.bam.flagstat
+        samtools idxstats ${prefix}.sorted.bam > ${prefix}.sorted.bam.idxstats
+        samtools stats ${prefix}.sorted.bam > ${prefix}.sorted.bam.stats
+        """
+    } else {
+      """
+      ln -s ${bams[0]} ${prefix}.sorted.bam
+      ln -s ${bams[1]} ${prefix}.sorted.bam.bai
+      touch ${prefix}.MarkDuplicates.metrics.txt
+      samtools flagstat ${prefix}.sorted.bam > ${prefix}.sorted.bam.flagstat
+      samtools idxstats ${prefix}.sorted.bam > ${prefix}.sorted.bam.idxstats
+      samtools stats ${prefix}.sorted.bam > ${prefix}.sorted.bam.stats
+      """
+    }
+}
+
 // ///////////////////////////////////////////////////////////////////////////////
 // ///////////////////////////////////////////////////////////////////////////////
 // /* --                                                                     -- */
@@ -1419,7 +1379,6 @@ process MergedLibDANPOS2PlotProfile {
 //     file ('preseq/*') from ch_mlib_preseq_mqc.collect().ifEmpty([])
 //     file ('deeptools/*') from ch_mlib_plotfingerprint_mqc.collect().ifEmpty([])
 //     file ('deeptools/*') from ch_mlib_plotprofile_mqc.collect().ifEmpty([])
-//     file ('deeptools/danpos/*') from ch_mlib_danpos_plotprofile_mqc.collect().ifEmpty([])
 //
 //     file ('alignment/mergedReplicate/*') from ch_mrep_bam_flagstat_mqc.collect{it[1]}.ifEmpty([])
 //     file ('alignment/mergedReplicate/*') from ch_mrep_bam_stats_mqc.collect().ifEmpty([])
