@@ -2,13 +2,12 @@
 
 #######################################################################
 #######################################################################
-## Created on June 5th 2019 to reformat nf-core/mnaseseq design file
+## Created on February 22nd 2019 to check nf-core/mnaseseq design file
 #######################################################################
 #######################################################################
 
 import os
 import sys
-import requests
 import argparse
 
 ############################################
@@ -93,6 +92,11 @@ def check_design(DesignFileIn,DesignFileOut):
         print "{}: Mixture of paired-end and single-end reads!".format(ERROR_STR)
         sys.exit(1)
 
+    ## CHECK IF MULTIPLE GROUPS EXIST
+    multiGroups = False
+    if len(groupRepDict) > 1:
+        multiGroups = True
+
     ## WRITE TO FILE
     numRepList = []
     fout = open(DesignFileOut,'w')
@@ -115,6 +119,16 @@ def check_design(DesignFileIn,DesignFileOut):
                 else:
                     fout.write(','.join([sample_id] + fastQFiles) + '\n')
     fout.close()
+
+    ## CHECK IF REPLICATES IN DESIGN
+    repsExist = False
+    if max(numRepList) != 1:
+        repsExist = True
+
+    ## CHECK FOR BALANCED DESIGN ACROSS MULTIPLE GROUPS.
+    balancedDesign = False
+    if len(set(numRepList)) == 1 and multiGroups and repsExist:
+        balancedDesign = True
 
 ############################################
 ############################################
