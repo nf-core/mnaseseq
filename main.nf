@@ -1085,7 +1085,7 @@ process MergedLibPlotProfile {
 
     script:
     prefix="${name}.mLb.clN"
-    """        
+    """
     computeMatrix scale-regions \\
         --regionsFileName $bed \\
         --scoreFileName $bigwig \\
@@ -1195,7 +1195,7 @@ process MergedRepBAM {
 /*
  * STEP 7.2 Name sort BAM for DANPOS2
  */
-if (!params.single_end) {
+if (params.single_end) {
     ch_mrep_name_bam_danpos = ch_mrep_bam
 } else {
     process MergedRepNameSortBAM {
