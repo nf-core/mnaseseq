@@ -1,7 +1,7 @@
 # ![nfcore/mnaseseq](docs/images/nf-core-mnaseseq_logo.png)
 
 [![Build Status](https://travis-ci.com/nf-core/mnaseseq.svg?branch=master)](https://travis-ci.com/nf-core/mnaseseq)
-[![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A519.04.0-brightgreen.svg)](https://www.nextflow.io/)
+[![Nextflow](https://img.shields.io/badge/nextflow-%E2%89%A519.10.0-brightgreen.svg)](https://www.nextflow.io/)
 
 [![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg)](http://bioconda.github.io/)
 [![Docker](https://img.shields.io/docker/automated/nfcore/mnaseseq.svg)](https://hub.docker.com/r/nfcore/mnaseseq)
@@ -37,8 +37,14 @@ The pipeline is built using [Nextflow](https://www.nextflow.io), a workflow tool
     5. Calculate genome-wide coverage assessment ([`deepTools`](https://deeptools.readthedocs.io/en/develop/content/tools/plotFingerprint.html))
     6. Call nucleosome positions and generate smoothed, normalised coverage bigWig files that can be used to generate occupancy profile plots between samples across features of interest ([`DANPOS2`](https://sites.google.com/site/danposdoc/))
     7. Generate gene-body meta-profile from DANPOS2 smoothed bigWig files ([`deepTools`](https://deeptools.readthedocs.io/en/develop/content/tools/plotProfile.html))
-6. Create IGV session file containing bigWig tracks for data visualisation ([`IGV`](https://software.broadinstitute.org/software/igv/)).
-7. Present QC for raw read and alignment results ([`MultiQC`](http://multiqc.info/))
+6. Merge filtered alignments across replicates ([`picard`](https://broadinstitute.github.io/picard/))
+    1. Re-mark duplicates ([`picard`](https://broadinstitute.github.io/picard/))
+    2. Remove duplicate reads ([`SAMtools`](https://sourceforge.net/projects/samtools/files/samtools/))
+    3. Create normalised bigWig files scaled to 1 million mapped reads ([`BEDTools`](https://github.com/arq5x/bedtools2/), [`wigToBigWig`](http://hgdownload.soe.ucsc.edu/admin/exe/))
+    4. Call nucleosome positions and generate smoothed, normalised coverage bigWig files that can be used to generate occupancy profile plots between samples across features of interest ([`DANPOS2`](https://sites.google.com/site/danposdoc/))
+    5. Generate gene-body meta-profile from DANPOS2 smoothed bigWig files ([`deepTools`](https://deeptools.readthedocs.io/en/develop/content/tools/plotProfile.html))
+7. Create IGV session file containing bigWig tracks for data visualisation ([`IGV`](https://software.broadinstitute.org/software/igv/)).
+8. Present QC for raw read and alignment results ([`MultiQC`](http://multiqc.info/))
 
 ## Quick Start
 
@@ -57,7 +63,7 @@ nextflow run nf-core/mnaseseq -profile test,<docker/singularity/conda/institute>
 iv. Start running your own analysis!
 
 ```bash
-nextflow run nf-core/mnaseseq -profile <docker/singularity/conda/institute> --design design.csv --genome GRCh37
+nextflow run nf-core/mnaseseq -profile <docker/singularity/conda/institute> --input design.csv --genome GRCh37
 ```
 
 See [usage docs](docs/usage.md) for all of the available options when running the pipeline.
@@ -77,7 +83,7 @@ The nf-core/mnaseseq pipeline comes with documentation about the pipeline, found
 
 ## Credits
 
-The pipeline was originally written by the [The Bioinformatics & Biostatistics Group](https://www.crick.ac.uk/research/science-technology-platforms/bioinformatics-and-biostatistics/) for use at [The Francis Crick Institute](https://www.crick.ac.uk/), London.
+The pipeline was originally written by [The Bioinformatics & Biostatistics Group](https://www.crick.ac.uk/research/science-technology-platforms/bioinformatics-and-biostatistics/) for use at [The Francis Crick Institute](https://www.crick.ac.uk/), London.
 
 The pipeline was developed by [Harshil Patel](mailto:harshil.patel@crick.ac.uk).
 
@@ -96,3 +102,5 @@ For further information or help, don't hesitate to get in touch on [Slack](https
 
 You can cite the `nf-core` pre-print as follows:  
 > Ewels PA, Peltzer A, Fillinger S, Alneberg JA, Patel H, Wilm A, Garcia MU, Di Tommaso P, Nahnsen S. **nf-core: Community curated bioinformatics pipelines**. *bioRxiv*. 2019. p. 610741. [doi: 10.1101/610741](https://www.biorxiv.org/content/10.1101/610741v1).
+
+An extensive list of references for the tools used by the pipeline can be found in the [`CITATIONS.md`](CITATIONS.md) file.
