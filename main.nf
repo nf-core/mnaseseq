@@ -1192,21 +1192,24 @@ process MergedRepBAM {
     }
 }
 
+/*
+ * STEP 7.2 Name sort BAM for DANPOS2
+ */
 if (!params.single_end) {
-    ch_mrep_bam_name_sort = ch_mrep_bam
+    ch_mrep_name_bam_danpos = ch_mrep_bam
 } else {
-    /*
-     * STEP 7.2 Name sort BAM for DANPOS2
-     */
     process MergedRepNameSortBAM {
         tag "$name"
         label 'process_medium'
+
+        when:
+        !params.skip_merge_replicates && replicatesExist
 
         input:
         set val(name), file(bam) from ch_mrep_bam
 
         output:
-        set val(name), file("*.bam") into ch_mrep_bam_name_sort
+        set val(name), file("*.bam") into ch_mrep_name_bam_danpos
 
         script:
         prefix = "${name}.mRp.clN"
@@ -1272,12 +1275,119 @@ process MergedRepBigWig {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 
+/*
+ * STEP 9.1 Convert BAM to BED
+ */
+process MergedRepBAMToBED {
+    tag "$name"
+    label 'process_low'
 
+    when:
+    !params.skip_merge_replicates && replicatesExist && !params.skip_danpos
 
+    input:
+    set val(name), file(bam) from ch_mrep_name_bam_danpos
 
+    output:
+    set val(name), file("*.bed") into ch_mrep_bam_to_bed
 
+    script:
+    prefix="${name}.mRp.clN"
+    ibam = params.single_end ? bam[0] : bam
+    """
+    bamToBed -i $ibam > ${prefix}.bed
+    """
+}
 
+/*
+* STEP 9.2 Run DANPOS2
+ */
+process MergedRepDANPOS2 {
+    tag "$name"
+    label 'process_medium'
+    publishDir "${params.outdir}/bwa/mergedReplicate/danpos", mode: 'copy',
+        saveAs: {filename ->
+                    if (filename.endsWith(".bigWig")) "$filename"
+                    else if (filename.endsWith(".xls")) "$filename"
+                    else if (filename.endsWith(".bed")) "$filename"
+                    else null
+                }
 
+    when:
+    !params.skip_merge_replicates && replicatesExist && !params.skip_danpos
+
+    input:
+    set val(name), file(bed) from ch_mrep_bam_to_bed
+    file sizes from ch_genome_sizes_mrep_danpos.collect()
+
+    output:
+    set val(name), file("*.{xls,bed}")
+    set val(name), file("*.bigWig") into ch_mrep_danpos_bigwig
+    file "*igv.txt" into ch_mrep_danpos_bigwig_igv
+
+    script:
+    prefix="${name}.mRp.clN"
+    pe_params = params.single_end ? "" : "--paired 1"
+    """
+    danpos.py dpos \\
+        $bed \\
+        --span 1 \\
+        --smooth_width 20 \\
+        --width 40 \\
+        --count 1000000 \\
+        --out ./result/ \\
+        $pe_params
+    mv ./result/*/* .
+
+    wigToBigWig -clip ${prefix}.Fnor.smooth.wig $sizes ${prefix}.Fnor.smooth.bigWig
+
+    awk -v FS='\t' -v OFS='\t' 'FNR > 1 { print \$1, \$2-1, \$3, "Interval_"NR-1, \$6, "+" }' ${prefix}.Fnor.smooth.positions.xls > ${prefix}.Fnor.smooth.positions.bed
+    awk -v FS='\t' -v OFS='\t' 'FNR > 1 { print \$1, \$4-1, \$4, "Interval_"NR-1, \$6, "+" }' ${prefix}.Fnor.smooth.positions.xls > ${prefix}.Fnor.smooth.positions.summit.bed
+
+    find * -type f -name "*.bigWig" -exec echo -e "bwa/mergedReplicate/danpos/"{}"\\t0,0,178" \\; > ${prefix}.danpos.bigWig.igv.txt
+    find * -type f -name "*.bed" -exec echo -e "bwa/mergedReplicate/danpos/"{}"\\t0,0,178" \\; > ${prefix}.danpos.bed.igv.txt
+    """
+}
+
+/*
+ * STEP 9.3 Generate DANPOS2 bigWig coverage plot with deepTools
+ */
+process MergedRepPlotProfile {
+    tag "$name"
+    label 'process_high'
+    publishDir "${params.outdir}/bwa/mergedReplicate/deepTools/plotProfile", mode: 'copy'
+
+    when:
+    !params.skip_merge_replicates && replicatesExist && !params.skip_danpos && !params.skip_plot_profile
+
+    input:
+    set val(name), file(bigwig) from ch_mrep_danpos_bigwig
+    file bed from ch_gene_bed
+
+    output:
+    file '*.{gz,pdf}'
+    file '*.tab' into ch_mrep_plotprofile_mqc
+
+    script:
+    prefix="${name}.mRp.clN"
+    """
+    computeMatrix reference-point \\
+        --regionsFileName $bed \\
+        --scoreFileName $bigwig \\
+        --outFileName ${prefix}.computeMatrix.mat.gz \\
+        --outFileNameMatrix ${prefix}.computeMatrix.vals.mat.gz \\
+        --referencePoint TSS \\
+        --beforeRegionStartLength 1000 \\
+        --afterRegionStartLength 1000 \\
+        --skipZeros \\
+        --samplesLabel $name \\
+        --numberOfProcessors $task.cpus
+
+    plotProfile --matrixFile ${prefix}.computeMatrix.mat.gz \\
+        --outFileName ${prefix}.plotProfile.pdf \\
+        --outFileNameData ${prefix}.plotProfile.tab
+    """
+}
 
 // ///////////////////////////////////////////////////////////////////////////////
 // ///////////////////////////////////////////////////////////////////////////////
@@ -1288,7 +1398,7 @@ process MergedRepBigWig {
 // ///////////////////////////////////////////////////////////////////////////////
 //
 // /*
-//  * STEP 9 - Create IGV session file
+//  * STEP 10 - Create IGV session file
 //  */
 // process IGV {
 //     publishDir "${params.outdir}/igv", mode: 'copy'
@@ -1377,7 +1487,7 @@ process MergedRepBigWig {
 // }
 //
 // /*
-//  * STEP 10 - MultiQC
+//  * STEP 11 - MultiQC
 //  */
 // process MultiQC {
 //     publishDir "${params.outdir}/multiqc", mode: 'copy'
@@ -1407,6 +1517,7 @@ process MergedRepBigWig {
 //     file ('preseq/*') from ch_mlib_preseq_mqc.collect().ifEmpty([])
 //     file ('deeptools/*') from ch_mlib_plotfingerprint_mqc.collect().ifEmpty([])
 //     file ('deeptools/*') from ch_mlib_plotprofile_mqc.collect().ifEmpty([])
+//     file ('deeptools/*') from ch_mrep_plotprofile_mqc.collect().ifEmpty([])
 //
 //     file ('alignment/mergedReplicate/*') from ch_mrep_bam_flagstat_mqc.collect{it[1]}.ifEmpty([])
 //     file ('alignment/mergedReplicate/*') from ch_mrep_bam_stats_mqc.collect().ifEmpty([])
@@ -1435,7 +1546,7 @@ process MergedRepBigWig {
 ///////////////////////////////////////////////////////////////////////////////
 
 /*
- * STEP 11 - Output description HTML
+ * STEP 12 - Output description HTML
  */
 process output_documentation {
     publishDir "${params.outdir}/Documentation", mode: 'copy'
