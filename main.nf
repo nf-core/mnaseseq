@@ -112,12 +112,7 @@ params.fasta = params.genome ? params.genomes[ params.genome ].fasta ?: false : 
 params.bwa_index = params.genome ? params.genomes[ params.genome ].bwa ?: false : false
 params.gtf = params.genome ? params.genomes[ params.genome ].gtf ?: false : false
 params.gene_bed = params.genome ? params.genomes[ params.genome ].bed12 ?: false : false
-params.mito_name = params.genome ? params.genomes[ params.genome ].mito_name ?: false : false
-params.macs_gsize = params.genome ? params.genomes[ params.genome ].macs_gsize ?: false : false
 params.blacklist = params.genome ? params.genomes[ params.genome ].blacklist ?: false : false
-
-// Global variables
-def PEAK_TYPE = params.narrow_peak ? "narrowPeak" : "broadPeak"
 
 // Has the run name been specified by the user?
 //  this has the bonus effect of catching both -name and --name
@@ -132,6 +127,7 @@ if (!(workflow.runName ==~ /[a-z]+_[a-z]+/)) {
 
 // Pipeline config
 ch_output_docs = file("$baseDir/docs/output.md", checkIfExists: true)
+ch_multiqc_config = file(params.multiqc_config, checkIfExists: true)
 
 // JSON files required by BAMTools for alignment filtering
 if (params.single_end) {
@@ -139,20 +135,6 @@ if (params.single_end) {
 } else {
     ch_bamtools_filter_config = file(params.bamtools_filter_pe_config, checkIfExists: true)
 }
-
-// Header files for MultiQC
-ch_multiqc_config = file(params.multiqc_config, checkIfExists: true)
-ch_mlib_peak_count_header = file("$baseDir/assets/multiqc/mlib_peak_count_header.txt", checkIfExists: true)
-ch_mlib_frip_score_header = file("$baseDir/assets/multiqc/mlib_frip_score_header.txt", checkIfExists: true)
-ch_mlib_peak_annotation_header = file("$baseDir/assets/multiqc/mlib_peak_annotation_header.txt", checkIfExists: true)
-ch_mlib_deseq2_pca_header = file("$baseDir/assets/multiqc/mlib_deseq2_pca_header.txt", checkIfExists: true)
-ch_mlib_deseq2_clustering_header = file("$baseDir/assets/multiqc/mlib_deseq2_clustering_header.txt", checkIfExists: true)
-
-ch_mrep_peak_count_header = file("$baseDir/assets/multiqc/mrep_peak_count_header.txt", checkIfExists: true)
-ch_mrep_frip_score_header = file("$baseDir/assets/multiqc/mrep_frip_score_header.txt", checkIfExists: true)
-ch_mrep_peak_annotation_header = file("$baseDir/assets/multiqc/mrep_peak_annotation_header.txt", checkIfExists: true)
-ch_mrep_deseq2_pca_header = file("$baseDir/assets/multiqc/mrep_deseq2_pca_header.txt", checkIfExists: true)
-ch_mrep_deseq2_clustering_header = file("$baseDir/assets/multiqc/mrep_deseq2_clustering_header.txt", checkIfExists: true)
 
 ////////////////////////////////////////////////////
 /* --          VALIDATE INPUTS                 -- */
@@ -186,14 +168,14 @@ if (params.bwa_index) {
 /* --                   AWS                    -- */
 ////////////////////////////////////////////////////
 
-if (workflow.profile == 'awsbatch') {
+if (workflow.profile.contains('awsbatch')) {
     // AWSBatch sanity checking
     if (!params.awsqueue || !params.awsregion) exit 1, "Specify correct --awsqueue and --awsregion parameters on AWSBatch!"
     // Check outdir paths to be S3 buckets if running on AWSBatch
     // related: https://github.com/nextflow-io/nextflow/issues/813
     if (!params.outdir.startsWith('s3:')) exit 1, "Outdir not on S3 - specify S3 Bucket to run on AWSBatch!"
     // Prevent trace files to be stored on S3 since S3 does not support rolling files.
-    if (workflow.tracedir.startsWith('s3:')) exit 1, "Specify a local tracedir or run without trace! S3 cannot be used for tracefiles."
+    if (params.tracedir.startsWith('s3:')) exit 1, "Specify a local tracedir or run without trace! S3 cannot be used for tracefiles."
 }
 
 ///////////////////////////////////////////////////////////////////////////////
