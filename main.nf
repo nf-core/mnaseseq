@@ -1270,10 +1270,6 @@ process MultiQC {
     file ('alignment/mergedLibrary/*') from ch_mlib_rm_orphan_stats_mqc.collect()
     file ('alignment/mergedLibrary/picard_metrics/*') from ch_mlib_bam_metrics_mqc.collect()
     file ('alignment/mergedLibrary/picard_metrics/*') from ch_mlib_collectmetrics_mqc.collect()
-    file ('macs/mergedLibrary/*') from ch_mlib_macs_mqc.collect().ifEmpty([])
-    file ('macs/mergedLibrary/*') from ch_mlib_peak_qc_mqc.collect().ifEmpty([])
-    file ('macs/mergedLibrary/consensus/*') from ch_mlib_macs_consensus_counts_mqc.collect().ifEmpty([])
-    file ('macs/mergedLibrary/consensus/*') from ch_mlib_macs_consensus_deseq_mqc.collect().ifEmpty([])
     file ('preseq/*') from ch_mlib_preseq_mqc.collect().ifEmpty([])
     file ('deeptools/*') from ch_mlib_plotprofile_mqc.collect().ifEmpty([])
     file ('deeptools/*') from ch_mlib_plotfingerprint_mqc.collect().ifEmpty([])
@@ -1281,10 +1277,6 @@ process MultiQC {
     file ('alignment/mergedReplicate/*') from ch_mrep_bam_flagstat_mqc.collect{it[1]}.ifEmpty([])
     file ('alignment/mergedReplicate/*') from ch_mrep_bam_stats_mqc.collect().ifEmpty([])
     file ('alignment/mergedReplicate/*') from ch_mrep_bam_metrics_mqc.collect().ifEmpty([])
-    file ('macs/mergedReplicate/*') from ch_mrep_macs_mqc.collect().ifEmpty([])
-    file ('macs/mergedReplicate/*') from ch_mrep_peak_qc_mqc.collect().ifEmpty([])
-    file ('macs/mergedReplicate/consensus/*') from ch_mrep_macs_consensus_counts_mqc.collect().ifEmpty([])
-    file ('macs/mergedReplicate/consensus/*') from ch_mrep_macs_consensus_deseq_mqc.collect().ifEmpty([])
 
     output:
     file "*multiqc_report.html" into ch_multiqc_report
@@ -1296,7 +1288,7 @@ process MultiQC {
     rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
     """
     multiqc . -f $rtitle $rfilename --config $multiqc_config \\
-        -m custom_content -m fastqc -m cutadapt -m samtools -m picard -m preseq -m featureCounts -m deeptools
+        -m custom_content -m fastqc -m cutadapt -m samtools -m picard -m preseq -m deeptools
     """
 }
 
