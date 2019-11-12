@@ -399,7 +399,8 @@ process MakeGenomeFilter {
     file "*.bed" into ch_genome_filter_regions         // BED FILE WITHOUT BLACKLIST REGIONS & MITOCHONDRIAL CONTIG FOR FILTERING
     file "*.sizes" into ch_genome_sizes_mlib_bigwig,   // CHROMOSOME SIZES FILE FOR BEDTOOLS
                         ch_genome_sizes_mrep_bigwig,
-                        ch_genome_sizes_mlib_danpos
+                        ch_genome_sizes_mlib_danpos,
+                        ch_genome_sizes_mrep_danpos
 
     script:
     blacklist_filter = params.blacklist ? "sortBed -i $blacklist -g ${fasta}.sizes | complementBed -i stdin -g ${fasta}.sizes" : "awk '{print \$1, '0' , \$2}' OFS='\t' ${fasta}.sizes"
@@ -947,7 +948,7 @@ process MergedLibBigWig {
 }
 
 /*
- * STEP 5.6 deepTools plotFingerprint
+ * STEP 5.5 deepTools plotFingerprint
  */
 process MergedLibPlotFingerprint {
     tag "$name"
@@ -1112,7 +1113,7 @@ process MergedLibPlotProfile {
 ///////////////////////////////////////////////////////////////////////////////
 
 /*
- * STEP 7 Merge library BAM files across all replicates
+ * STEP 7.1 Merge library BAM files across all replicates
  */
 ch_mlib_rm_orphan_bam_mrep
     .map { it -> [ it[0].split('_')[0..-2].join('_'), it[1] ] }
@@ -1139,7 +1140,8 @@ process MergedRepBAM {
     set val(name), file(bams) from ch_mlib_rm_orphan_bam_mrep
 
     output:
-    set val(name), file("*${prefix}.sorted.{bam,bam.bai}") into ch_mrep_bam_bigwig
+    set val(name), file("*${prefix}.sorted.{bam,bam.bai}") into ch_mrep_bam,
+                                                                ch_mrep_bam_bigwig
     set val(name), file("*.flagstat") into ch_mrep_bam_flagstat_bigwig,
                                            ch_mrep_bam_flagstat_mqc
     file "*.{idxstats,stats}" into ch_mrep_bam_stats_mqc
@@ -1190,67 +1192,93 @@ process MergedRepBAM {
     }
 }
 
-// ///////////////////////////////////////////////////////////////////////////////
-// ///////////////////////////////////////////////////////////////////////////////
-// /* --                                                                     -- */
-// /* --              MERGE REPLICATE BAM POST-ANALYSIS                      -- */
-// /* --                                                                     -- */
-// ///////////////////////////////////////////////////////////////////////////////
-// ///////////////////////////////////////////////////////////////////////////////
-//
-// /*
-//  * STEP 8.1 Read depth normalised bigWig
-//  */
-// process MergedRepBigWig {
-//     tag "$name"
-//     label 'process_medium'
-//     publishDir "${params.outdir}/bwa/mergedReplicate/bigwig", mode: 'copy',
-//         saveAs: { filename ->
-//                       if (filename.endsWith("scale_factor.txt")) "scale/$filename"
-//                       else if (filename.endsWith(".bigWig")) "$filename"
-//                       else null
-//                 }
-//
-//     when:
-//     !params.skip_merge_replicates && replicatesExist
-//
-//     input:
-//     set val(name), file(bam), file(flagstat) from ch_mrep_bam_bigwig.join(ch_mrep_bam_flagstat_bigwig, by: [0])
-//     file sizes from ch_genome_sizes_mrep_bigwig.collect()
-//
-//     output:
-//     set val(name), file("*.bigWig") into ch_mrep_bigwig
-//     file "*scale_factor.txt"
-//     file "*igv.txt" into ch_mrep_bigwig_igv
-//
-//     script:
-//     prefix = "${name}.mRp.clN"
-//     pe_fragment = params.single_end ? "" : "-pc"
-//     extend = (params.single_end && params.fragment_size > 0) ? "-fs ${params.fragment_size}" : ''
-//     """
-//     SCALE_FACTOR=\$(grep 'mapped (' $flagstat | awk '{print 1000000/\$1}')
-//     echo \$SCALE_FACTOR > ${prefix}.scale_factor.txt
-//     genomeCoverageBed -ibam ${bam[0]} -bg -scale \$SCALE_FACTOR $pe_fragment $extend | sort -k1,1 -k2,2n >  ${prefix}.bedGraph
-//
-//     bedGraphToBigWig ${prefix}.bedGraph $sizes ${prefix}.bigWig
-//
-//     find * -type f -name "*.bigWig" -exec echo -e "bwa/mergedReplicate/bigwig/"{}"\\t0,0,178" \\; > ${prefix}.bigWig.igv.txt
-//     """
-// }
-//
-// ///////////////////////////////////////////////////////////////////////////////
-// ///////////////////////////////////////////////////////////////////////////////
-// /* --                                                                     -- */
-// /* --                    MERGE REPLICATE DANPOS                           -- */
-// /* --                                                                     -- */
-// ///////////////////////////////////////////////////////////////////////////////
-// ///////////////////////////////////////////////////////////////////////////////
-//
-//
-//
-//
-//
-//
+if (!params.single_end) {
+    ch_mrep_bam_name_sort = ch_mrep_bam
+} else {
+    /*
+     * STEP 7.2 Name sort BAM for DANPOS2
+     */
+    process MergedRepNameSortBAM {
+        tag "$name"
+        label 'process_medium'
+
+        input:
+        set val(name), file(bam) from ch_mrep_bam
+
+        output:
+        set val(name), file("*.bam") into ch_mrep_bam_name_sort
+
+        script:
+        prefix = "${name}.mRp.clN"
+        """
+        samtools sort -n -@ $task.cpus -o ${prefix}.bam -T $prefix ${bam[0]}
+        """
+    }
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+/* --                                                                     -- */
+/* --              MERGE REPLICATE BAM POST-ANALYSIS                      -- */
+/* --                                                                     -- */
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+/*
+ * STEP 8.1 Read depth normalised bigWig
+ */
+process MergedRepBigWig {
+    tag "$name"
+    label 'process_medium'
+    publishDir "${params.outdir}/bwa/mergedReplicate/bigwig", mode: 'copy',
+        saveAs: { filename ->
+                      if (filename.endsWith("scale_factor.txt")) "scale/$filename"
+                      else if (filename.endsWith(".bigWig")) "$filename"
+                      else null
+                }
+
+    when:
+    !params.skip_merge_replicates && replicatesExist
+
+    input:
+    set val(name), file(bam), file(flagstat) from ch_mrep_bam_bigwig.join(ch_mrep_bam_flagstat_bigwig, by: [0])
+    file sizes from ch_genome_sizes_mrep_bigwig.collect()
+
+    output:
+    set val(name), file("*.bigWig") into ch_mrep_bigwig
+    file "*scale_factor.txt"
+    file "*igv.txt" into ch_mrep_bigwig_igv
+
+    script:
+    prefix = "${name}.mRp.clN"
+    pe_fragment = params.single_end ? "" : "-pc"
+    extend = (params.single_end && params.fragment_size > 0) ? "-fs ${params.fragment_size}" : ''
+    """
+    SCALE_FACTOR=\$(grep 'mapped (' $flagstat | awk '{print 1000000/\$1}')
+    echo \$SCALE_FACTOR > ${prefix}.scale_factor.txt
+    genomeCoverageBed -ibam ${bam[0]} -bg -scale \$SCALE_FACTOR $pe_fragment $extend | sort -k1,1 -k2,2n >  ${prefix}.bedGraph
+
+    bedGraphToBigWig ${prefix}.bedGraph $sizes ${prefix}.bigWig
+
+    find * -type f -name "*.bigWig" -exec echo -e "bwa/mergedReplicate/bigwig/"{}"\\t0,0,178" \\; > ${prefix}.bigWig.igv.txt
+    """
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+/* --                                                                     -- */
+/* --                    MERGE REPLICATE DANPOS                           -- */
+/* --                                                                     -- */
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+
+
+
+
+
+
+
 // ///////////////////////////////////////////////////////////////////////////////
 // ///////////////////////////////////////////////////////////////////////////////
 // /* --                                                                     -- */
