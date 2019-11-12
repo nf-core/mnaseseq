@@ -1073,7 +1073,7 @@ process MergedLibPlotProfile {
     publishDir "${params.outdir}/bwa/mergedLibrary/deepTools/plotProfile", mode: 'copy'
 
     when:
-    !params.skip_plot_profile && !params.skip_danpos
+    !params.skip_danpos && !params.skip_plot_profile
 
     input:
     set val(name), file(bigwig) from ch_mlib_danpos_bigwig
@@ -1389,84 +1389,84 @@ process MergedRepPlotProfile {
     """
 }
 
-// ///////////////////////////////////////////////////////////////////////////////
-// ///////////////////////////////////////////////////////////////////////////////
-// /* --                                                                     -- */
-// /* --                             IGV                                     -- */
-// /* --                                                                     -- */
-// ///////////////////////////////////////////////////////////////////////////////
-// ///////////////////////////////////////////////////////////////////////////////
-//
-// /*
-//  * STEP 10 - Create IGV session file
-//  */
-// process IGV {
-//     publishDir "${params.outdir}/igv", mode: 'copy'
-//
-//     when:
-//     !params.skip_igv
-//
-//     input:
-//     file fasta from ch_fasta
-//
-//     file bigwigs from ch_mlib_bigwig_igv.collect().ifEmpty([])
-//     //file danpos from ch_mlib_danpos_bigwig_igv.collect().ifEmpty([])
-//
-//     file rbigwigs from ch_mrep_bigwig_igv.collect().ifEmpty([])
-//     //file danpos from ch_mrep_danpos_bigwig_igv.collect().ifEmpty([])
-//
-//     output:
-//     file "*.{txt,xml}" into ch_igv_session
-//
-//     script: // scripts are bundled with the pipeline, in nf-core/mnaseseq/bin/
-//     """
-//     cat *.txt > igv_files.txt
-//     igv_files_to_session.py igv_session.xml igv_files.txt ../../reference_genome/${fasta.getName()} --path_prefix '../'
-//     """
-// }
-//
-// ///////////////////////////////////////////////////////////////////////////////
-// ///////////////////////////////////////////////////////////////////////////////
-// /* --                                                                     -- */
-// /* --                          MULTIQC                                    -- */
-// /* --                                                                     -- */
-// ///////////////////////////////////////////////////////////////////////////////
-// ///////////////////////////////////////////////////////////////////////////////
-//
-// /*
-//  * Parse software version numbers
-//  */
-// process get_software_versions {
-//     publishDir "${params.outdir}/pipeline_info", mode: 'copy',
-//         saveAs: { filename ->
-//                       if (filename.indexOf(".csv") > 0) filename
-//                       else null
-//                 }
-//
-//     output:
-//     file 'software_versions_mqc.yaml' into ch_software_versions_mqc
-//     file "software_versions.csv"
-//
-//     script:
-//     """
-//     echo $workflow.manifest.version > v_pipeline.txt
-//     echo $workflow.nextflow.version > v_nextflow.txt
-//     fastqc --version > v_fastqc.txt
-//     trim_galore --version > v_trim_galore.txt
-//     echo \$(bwa 2>&1) > v_bwa.txt
-//     samtools --version > v_samtools.txt
-//     bedtools --version > v_bedtools.txt
-//     echo \$(bamtools --version 2>&1) > v_bamtools.txt
-//     echo \$(plotFingerprint --version 2>&1) > v_deeptools.txt || true
-//     picard MarkDuplicates --version &> v_picard.txt  || true
-//     echo \$(R --version 2>&1) > v_R.txt
-//     python -c "import pysam; print(pysam.__version__)" > v_pysam.txt
-//     preseq &> v_preseq.txt
-//     danpos.py --version > v_danpos.txt
-//     multiqc --version > v_multiqc.txt
-//     scrape_software_versions.py &> software_versions_mqc.yaml
-//     """
-// }
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+/* --                                                                     -- */
+/* --                             IGV                                     -- */
+/* --                                                                     -- */
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+/*
+ * STEP 10 - Create IGV session file
+ */
+process IGV {
+    publishDir "${params.outdir}/igv", mode: 'copy'
+
+    when:
+    !params.skip_igv
+
+    input:
+    file fasta from ch_fasta
+
+    file lbigwigs from ch_mlib_bigwig_igv.collect()
+    file ldanpos from ch_mlib_danpos_bigwig_igv.collect().ifEmpty([])
+
+    file rbigwigs from ch_mrep_bigwig_igv.collect().ifEmpty([])
+    file rdanpos from ch_mrep_danpos_bigwig_igv.collect().ifEmpty([])
+
+    output:
+    file "*.{txt,xml}"
+
+    script: // scripts are bundled with the pipeline, in nf-core/mnaseseq/bin/
+    """
+    cat *.txt > igv_files.txt
+    igv_files_to_session.py igv_session.xml igv_files.txt ../../reference_genome/${fasta.getName()} --path_prefix '../'
+    """
+}
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+/* --                                                                     -- */
+/* --                          MULTIQC                                    -- */
+/* --                                                                     -- */
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+
+/*
+ * Parse software version numbers
+ */
+process get_software_versions {
+    publishDir "${params.outdir}/pipeline_info", mode: 'copy',
+        saveAs: { filename ->
+                      if (filename.indexOf(".csv") > 0) filename
+                      else null
+                }
+
+    output:
+    file 'software_versions_mqc.yaml' into ch_software_versions_mqc
+    file "software_versions.csv"
+
+    script:
+    """
+    echo $workflow.manifest.version > v_pipeline.txt
+    echo $workflow.nextflow.version > v_nextflow.txt
+    fastqc --version > v_fastqc.txt
+    trim_galore --version > v_trim_galore.txt
+    echo \$(bwa 2>&1) > v_bwa.txt
+    samtools --version > v_samtools.txt
+    bedtools --version > v_bedtools.txt
+    echo \$(bamtools --version 2>&1) > v_bamtools.txt
+    echo \$(plotFingerprint --version 2>&1) > v_deeptools.txt || true
+    picard MarkDuplicates --version &> v_picard.txt  || true
+    echo \$(R --version 2>&1) > v_R.txt
+    python -c "import pysam; print(pysam.__version__)" > v_pysam.txt
+    preseq &> v_preseq.txt
+    danpos.py --version > v_danpos.txt
+    multiqc --version > v_multiqc.txt
+    scrape_software_versions.py &> software_versions_mqc.yaml
+    """
+}
 //
 // def create_workflow_summary(summary) {
 //
