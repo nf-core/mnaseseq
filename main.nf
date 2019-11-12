@@ -199,11 +199,6 @@ if (params.gene_bed)              summary['Gene BED File'] = params.gene_bed
 if (params.tss_bed)               summary['TSS BED File'] = params.tss_bed
 if (params.bwa_index)             summary['BWA Index'] = params.bwa_index
 if (params.blacklist)             summary['Blacklist BED'] = params.blacklist
-if (params.mito_name)             summary['Mitochondrial Contig'] = params.mito_name
-summary['MACS2 Genome Size']      = params.macs_gsize ?: 'Not supplied'
-summary['Min Consensus Reps']     = params.min_reps_consensus
-if (params.macs_gsize)            summary['MACS2 Narrow Peaks'] = params.narrow_peak ? 'Yes' : 'No'
-if (!params.narrow_peak)          summary['MACS2 Broad Cutoff'] = params.broad_cutoff
 if (params.skip_trimming) {
     summary['Trimming Step']      = 'Skipped'
 } else {
@@ -216,21 +211,21 @@ if (params.skip_trimming) {
 if (params.seq_center)            summary['Sequencing Center'] = params.seq_center
 if (params.single_end)            summary['Fragment Size'] = "$params.fragment_size bp"
 summary['Fingerprint Bins']       = params.fingerprint_bins
-if (params.keep_mito)             summary['Keep Mitochondrial'] = 'Yes'
+summary['Max Mismatch']           = params.max_mismatch
+summary['Min Insert Size']        = "$params.min_insert bp"
+summary['Max Insert Size']        = "$params.max_insert bp"
 if (params.keep_dups)             summary['Keep Duplicates'] = 'Yes'
 if (params.keep_multi_map)        summary['Keep Multi-mapped'] = 'Yes'
 summary['Save Genome Index']      = params.save_reference ? 'Yes' : 'No'
 if (params.save_trimmed)          summary['Save Trimmed'] = 'Yes'
 if (params.save_align_intermeds)  summary['Save Intermeds'] =  'Yes'
-if (params.save_macs_pileup)      summary['Save MACS2 Pileup'] = 'Yes'
 if (params.skip_merge_replicates) summary['Skip Merge Replicates'] = 'Yes'
-if (params.skip_diff_analysis)    summary['Skip Diff Analysis'] = 'Yes'
 if (params.skip_fastqc)           summary['Skip FastQC'] = 'Yes'
 if (params.skip_picard_metrics)   summary['Skip Picard Metrics'] = 'Yes'
 if (params.skip_preseq)           summary['Skip Preseq'] = 'Yes'
 if (params.skip_plot_profile)     summary['Skip plotProfile'] = 'Yes'
 if (params.skip_plot_fingerprint) summary['Skip plotFingerprint'] = 'Yes'
-if (params.skip_ataqv) summary['Skip Ataqv'] = 'Yes'
+if (params.skip_danpos)           summary['Skip DANPOS2'] = 'Yes'
 if (params.skip_igv)              summary['Skip IGV'] = 'Yes'
 if (params.skip_multiqc)          summary['Skip MultiQC'] = 'Yes'
 summary['Max Resources']          = "$params.max_memory memory, $params.max_cpus cpus, $params.max_time time per job"
@@ -258,16 +253,6 @@ log.info "-\033[2m--------------------------------------------------\033[0m-"
 
 // Check the hostnames against configured profiles
 checkHostname()
-
-// Show a big warning message if we're not running MACS
-if (!params.macs_gsize) {
-    def warnstring = params.genome ? "supported for '${params.genome}'" : 'supplied'
-    log.warn "=================================================================\n" +
-             "  WARNING! MACS genome size parameter not $warnstring.\n" +
-             "  Peak calling, annotation and differential analysis will be skipped.\n" +
-             "  Please specify value for '--macs_gsize' to run these steps.\n" +
-             "======================================================================="
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
