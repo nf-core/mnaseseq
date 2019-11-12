@@ -49,9 +49,9 @@ def helpMessage() {
       --save_trimmed [bool]           Save the trimmed FastQ files in the results directory
 
     Alignments
-      --min_insert                    Minimum insert size for filtering of mono-nucleosome paired-end reads (default: 100)
-      --max_insert                    Maximum insert size for filtering of mono-nucleosome paired-end reads (default: 200)
-      --max_mismatch                  Maximum number of mismatches in alignment. Derived from XM tag in BAM file (default: 4)
+      --min_insert [int]              Minimum insert size for filtering of mono-nucleosome paired-end reads (default: 100)
+      --max_insert [int]              Maximum insert size for filtering of mono-nucleosome paired-end reads (default: 200)
+      --max_mismatch [int]            Maximum number of mismatches in alignment. Derived from XM tag in BAM file (default: 4)
       --keep_dups [bool]              Duplicate reads are not filtered from alignments
       --keep_multi_map [bool]         Reads mapping to multiple locations are not filtered from alignments
       --skip_merge_replicates [bool]  Do not perform alignment merging and downstream analysis by merging replicates i.e. only do this by merging resequenced libraries
