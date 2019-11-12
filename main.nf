@@ -1085,15 +1085,15 @@ process MergedLibPlotProfile {
 
     script:
     prefix="${name}.mLb.clN"
-    """
-    computeMatrix reference-point \\
+    """        
+    computeMatrix scale-regions \\
         --regionsFileName $bed \\
         --scoreFileName $bigwig \\
         --outFileName ${prefix}.computeMatrix.mat.gz \\
         --outFileNameMatrix ${prefix}.computeMatrix.vals.mat.gz \\
-        --referencePoint TSS \\
-        --beforeRegionStartLength 1000 \\
-        --afterRegionStartLength 1000 \\
+        --regionBodyLength 1000 \\
+        --beforeRegionStartLength 3000 \\
+        --afterRegionStartLength 3000 \\
         --skipZeros \\
         --samplesLabel $name \\
         --numberOfProcessors $task.cpus
@@ -1371,14 +1371,14 @@ process MergedRepPlotProfile {
     script:
     prefix="${name}.mRp.clN"
     """
-    computeMatrix reference-point \\
+    computeMatrix scale-regions \\
         --regionsFileName $bed \\
         --scoreFileName $bigwig \\
         --outFileName ${prefix}.computeMatrix.mat.gz \\
         --outFileNameMatrix ${prefix}.computeMatrix.vals.mat.gz \\
-        --referencePoint TSS \\
-        --beforeRegionStartLength 1000 \\
-        --afterRegionStartLength 1000 \\
+        --regionBodyLength 1000 \\
+        --beforeRegionStartLength 3000 \\
+        --afterRegionStartLength 3000 \\
         --skipZeros \\
         --samplesLabel $name \\
         --numberOfProcessors $task.cpus
@@ -1467,75 +1467,74 @@ process get_software_versions {
     scrape_software_versions.py &> software_versions_mqc.yaml
     """
 }
-//
-// def create_workflow_summary(summary) {
-//
-//     def yaml_file = workDir.resolve('workflow_summary_mqc.yaml')
-//     yaml_file.text  = """
-//     id: 'nf-core-mnaseseq-summary'
-//     description: " - this information is collected when the pipeline is started."
-//     section_name: 'nf-core/mnaseseq Workflow Summary'
-//     section_href: 'https://github.com/nf-core/mnaseseq'
-//     plot_type: 'html'
-//     data: |
-//         <dl class=\"dl-horizontal\">
-// ${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style=\"color:#999999;\">N/A</a>'}</samp></dd>" }.join("\n")}
-//         </dl>
-//     """.stripIndent()
-//
-//    return yaml_file
-// }
-//
-// /*
-//  * STEP 11 - MultiQC
-//  */
-// process MultiQC {
-//     publishDir "${params.outdir}/multiqc", mode: 'copy'
-//
-//     when:
-//     !params.skip_multiqc
-//
-//     input:
-//     file multiqc_config from ch_multiqc_config
-//
-//     file ('software_versions/*') from ch_software_versions_mqc.collect()
-//     file ('workflow_summary/*') from create_workflow_summary(summary)
-//
-//     file ('fastqc/*') from ch_fastqc_reports_mqc.collect().ifEmpty([])
-//     file ('trimgalore/*') from ch_trimgalore_results_mqc.collect().ifEmpty([])
-//     file ('trimgalore/fastqc/*') from ch_trimgalore_fastqc_reports_mqc.collect().ifEmpty([])
-//
-//     file ('alignment/library/*') from ch_sort_bam_flagstat_mqc.collect()
-//
-//     file ('alignment/mergedLibrary/*') from ch_mlib_bam_stats_mqc.collect()
-//     file ('alignment/mergedLibrary/*') from ch_mlib_rm_orphan_flagstat_mqc.collect{it[1]}
-//     file ('alignment/mergedLibrary/*') from ch_mlib_rm_orphan_stats_mqc.collect()
-//     file ('alignment/mergedLibrary/picard_metrics/*') from ch_mlib_bam_metrics_mqc.collect()
-//     file ('alignment/mergedLibrary/picard_metrics/*') from ch_mlib_collectmetrics_prefilter_mqc.collect()
-//     file ('alignment/mergedLibrary/picard_metrics/*') from ch_mlib_collectmetrics_postfilter_mqc.collect()
 
-//     file ('preseq/*') from ch_mlib_preseq_mqc.collect().ifEmpty([])
-//     file ('deeptools/*') from ch_mlib_plotfingerprint_mqc.collect().ifEmpty([])
-//     file ('deeptools/*') from ch_mlib_plotprofile_mqc.collect().ifEmpty([])
-//     file ('deeptools/*') from ch_mrep_plotprofile_mqc.collect().ifEmpty([])
-//
-//     file ('alignment/mergedReplicate/*') from ch_mrep_bam_flagstat_mqc.collect{it[1]}.ifEmpty([])
-//     file ('alignment/mergedReplicate/*') from ch_mrep_bam_stats_mqc.collect().ifEmpty([])
-//     file ('alignment/mergedReplicate/*') from ch_mrep_bam_metrics_mqc.collect().ifEmpty([])
-//
-//     output:
-//     file "*multiqc_report.html" into ch_multiqc_report
-//     file "*_data"
-//     file "multiqc_plots"
-//
-//     script:
-//     rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
-//     rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
-//     """
-//     multiqc . -f $rtitle $rfilename --config $multiqc_config \\
-//         -m custom_content -m fastqc -m cutadapt -m samtools -m picard -m preseq -m deeptools
-//     """
-// }
+def create_workflow_summary(summary) {
+
+    def yaml_file = workDir.resolve('workflow_summary_mqc.yaml')
+    yaml_file.text  = """
+    id: 'nf-core-mnaseseq-summary'
+    description: " - this information is collected when the pipeline is started."
+    section_name: 'nf-core/mnaseseq Workflow Summary'
+    section_href: 'https://github.com/nf-core/mnaseseq'
+    plot_type: 'html'
+    data: |
+        <dl class=\"dl-horizontal\">
+${summary.collect { k,v -> "            <dt>$k</dt><dd><samp>${v ?: '<span style=\"color:#999999;\">N/A</a>'}</samp></dd>" }.join("\n")}
+        </dl>
+    """.stripIndent()
+
+   return yaml_file
+}
+
+/*
+ * STEP 11 - MultiQC
+ */
+process MultiQC {
+    publishDir "${params.outdir}/multiqc", mode: 'copy'
+
+    when:
+    !params.skip_multiqc
+
+    input:
+    file multiqc_config from ch_multiqc_config
+
+    file ('software_versions/*') from ch_software_versions_mqc.collect()
+    file ('workflow_summary/*') from create_workflow_summary(summary)
+
+    file ('fastqc/*') from ch_fastqc_reports_mqc.collect().ifEmpty([])
+    file ('trimgalore/*') from ch_trimgalore_results_mqc.collect().ifEmpty([])
+    file ('trimgalore/fastqc/*') from ch_trimgalore_fastqc_reports_mqc.collect().ifEmpty([])
+
+    file ('alignment/library/*') from ch_sort_bam_flagstat_mqc.collect()
+
+    file ('alignment/mergedLibrary/*') from ch_mlib_bam_stats_mqc.collect()
+    file ('alignment/mergedLibrary/*') from ch_mlib_rm_orphan_flagstat_mqc.collect{it[1]}
+    file ('alignment/mergedLibrary/*') from ch_mlib_rm_orphan_stats_mqc.collect()
+    file ('alignment/mergedLibrary/picard_metrics/*') from ch_mlib_bam_metrics_mqc.collect()
+    file ('alignment/mergedLibrary/picard_metrics/*') from ch_mlib_collectmetrics_prefilter_mqc.collect()
+    file ('alignment/mergedLibrary/picard_metrics/*') from ch_mlib_collectmetrics_postfilter_mqc.collect()
+    file ('alignment/mergedLibrary/preseq/*') from ch_mlib_preseq_mqc.collect().ifEmpty([])
+    file ('alignment/mergedLibrary/deeptools/*') from ch_mlib_plotfingerprint_mqc.collect().ifEmpty([])
+    file ('alignment/mergedLibrary/deeptools/*') from ch_mlib_plotprofile_mqc.collect().ifEmpty([])
+
+    file ('alignment/mergedReplicate/*') from ch_mrep_bam_stats_mqc.collect().ifEmpty([])
+    file ('alignment/mergedReplicate/*') from ch_mrep_bam_flagstat_mqc.collect{it[1]}.ifEmpty([])
+    file ('alignment/mergedReplicate/picard_metrics/*') from ch_mrep_bam_metrics_mqc.collect().ifEmpty([])
+    file ('alignment/mergedReplicate/deeptools/*') from ch_mrep_plotprofile_mqc.collect().ifEmpty([])
+
+    output:
+    file "*multiqc_report.html" into ch_multiqc_report
+    file "*_data"
+    file "multiqc_plots"
+
+    script:
+    rtitle = custom_runName ? "--title \"$custom_runName\"" : ''
+    rfilename = custom_runName ? "--filename " + custom_runName.replaceAll('\\W','_').replaceAll('_+','_') + "_multiqc_report" : ''
+    """
+    multiqc . -f $rtitle $rfilename --config $multiqc_config \\
+        -m custom_content -m fastqc -m cutadapt -m samtools -m picard -m preseq -m deeptools
+    """
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
