@@ -199,7 +199,7 @@ You can skip this portion of the analysis by specifying the `--skip_merge_replic
     ![IGV screenshot](images/igv_screenshot.png)  
 
     *Output directories*:
-    * `igv/<PEAK_TYPE>/`  
+    * `igv/`  
       * `igv_session.xml` file.  
       * `igv_files.txt` file containing a listing of the files used to create the IGV session, and their allocated colours.
 
