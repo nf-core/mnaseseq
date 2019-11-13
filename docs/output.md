@@ -162,7 +162,7 @@ You can skip this portion of the analysis by specifying the `--skip_merge_replic
 
 ## Aggregate analysis
 
-1. **Present QC for the raw read, alignment, peak and differential accessibility results**
+1. **Present QC for the raw read, alignment and genome-wide coverage**
 
     *Documentation*:  
     [MultiQC](https://multiqc.info/docs/)
