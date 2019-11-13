@@ -803,7 +803,7 @@ if (params.single_end) {
 ///////////////////////////////////////////////////////////////////////////////
 
 /*
- * STEP 5.1 preseq analysis after merging libraries and before filtering
+ * STEP 5.1 Preseq analysis after merging libraries and before filtering
  */
 process MergedLibPreseq {
     tag "$name"
@@ -1228,7 +1228,7 @@ if (params.single_end) {
 ///////////////////////////////////////////////////////////////////////////////
 
 /*
- * STEP 8.1 Read depth normalised bigWig
+ * STEP 8 Read depth normalised bigWig
  */
 process MergedRepBigWig {
     tag "$name"
@@ -1591,7 +1591,6 @@ workflow.onComplete {
     if (workflow.repository) email_fields['summary']['Pipeline repository Git URL'] = workflow.repository
     if (workflow.commitId) email_fields['summary']['Pipeline repository Git Commit'] = workflow.commitId
     if (workflow.revision) email_fields['summary']['Pipeline Git branch/tag'] = workflow.revision
-    if (workflow.container) email_fields['summary']['Docker image'] = workflow.container
     email_fields['summary']['Nextflow Version'] = workflow.nextflow.version
     email_fields['summary']['Nextflow Build'] = workflow.nextflow.build
     email_fields['summary']['Nextflow Compile Timestamp'] = workflow.nextflow.timestamp
