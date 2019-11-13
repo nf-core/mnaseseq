@@ -34,7 +34,7 @@ The initial QC and alignments are performed at the library-level e.g. if the sam
     [Trim Galore!](https://www.bioinformatics.babraham.ac.uk/projects/trim_galore/)
 
     *Description*:  
-    Trim Galore! is a wrapper tool around Cutadapt and FastQC to consistently apply quality and adapter trimming to FastQ files. By default, Trim Galore! will automatically detect and trim the appropriate adapter sequence. For most ATAC-seq datasets this will be the Nextera adapter sequence 'CTGTCTCTTATA'. See [`usage.md`](usage.md) for more details about the trimming options.
+    Trim Galore! is a wrapper tool around Cutadapt and FastQC to consistently apply quality and adapter trimming to FastQ files. By default, Trim Galore! will automatically detect and trim the appropriate adapter sequence. See [`usage.md`](usage.md) for more details about the trimming options.
 
     ![MultiQC - Cutadapt trimmed sequence plot](images/mqc_cutadapt_plot.png)
 
@@ -57,8 +57,6 @@ The initial QC and alignments are performed at the library-level e.g. if the sam
     Adapter-trimmed reads are mapped to the reference assembly using BWA. A genome index is required to run BWA so if this is not provided explicitly using the `--bwa_index` parameter then it will be created automatically from the genome fasta input. The index creation process can take a while for larger genomes so it is possible to use the `--save_reference` parameter to save the indices for future pipeline runs, reducing processing times.
 
     ![MultiQC - SAMtools stats plot](images/mqc_samtools_stats_plot.png)
-
-    ![MultiQC - SAMtools idxstats plot](images/mqc_samtools_idxstats_plot.png)
 
     File names in the resulting directory (i.e. `bwa/library/`) will have the '`.Lb.`' (**L**i**b**rary) suffix.
 
