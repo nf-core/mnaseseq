@@ -32,6 +32,9 @@
 * [MultiQC](https://www.ncbi.nlm.nih.gov/pubmed/27312411/)
   > Ewels P, Magnusson M, Lundin S, Käller M. MultiQC: summarize analysis results for multiple tools and samples in a single report. Bioinformatics. 2016 Oct 1;32(19):3047-8. doi: 10.1093/bioinformatics/btw354. Epub 2016 Jun 16. PubMed PMID: 27312411; PubMed Central PMCID: PMC5039924.
 
+* [R](https://www.R-project.org/)
+  > R Core Team (2017). R: A language and environment for statistical computing. R Foundation for Statistical Computing, Vienna, Austria.
+
 * [FastQC](https://www.bioinformatics.babraham.ac.uk/projects/fastqc/)
 
 * [Trim Galore!](https://www.bioinformatics.babraham.ac.uk/projects/trim_galore/)
