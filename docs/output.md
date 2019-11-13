@@ -117,6 +117,8 @@ The library-level alignments associated with the same sample are merged and subs
     *Output directories*:
     * `bwa/mergedLibrary/bigwig/`  
       Normalised `*.bigWig` files scaled to 1 million mapped reads.
+    * `bwa/mergedLibrary/bigwig/scale/`  
+      Per-sample scale factors used to normalise `*.bigWig` files.
 
 3. **Coverage QC**
 
