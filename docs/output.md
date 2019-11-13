@@ -154,11 +154,11 @@ The library-level alignments associated with the same sample are merged and subs
 
 ## Merged replicate-level analysis
 
-The alignments associated with all of the replicates from the same experimental condition can also be merged. This can be useful to increase the coverage for peak-calling and for other analyses that require high sequencing depth such as [motif footprinting](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3959825/). The analysis steps and directory structure for `bwa/mergedLibrary/` and `bwa/mergedReplicate/` are almost identical.  
+The alignments associated with all of the replicates from the same experimental condition can also be merged. This can be useful to increase the coverage for nucleosome positioning analysis. The analysis steps and directory structure for `bwa/mergedLibrary/` and `bwa/mergedReplicate/` are almost identical.  
 
 File names in the resulting directory (i.e. `bwa/mergedReplicate/`) will have the '`.mRp.`' suffix to denote **m**erged **R**e**p**licates.
 
-You can skip this portion of the analysis by specifying the `--skipMergeReplicate` parameter.  
+You can skip this portion of the analysis by specifying the `--skip_merge_replicates` parameter.  
 
 >NB: Merged library-level alignments will be used for read counting relative to the consensus merged replicate-level peakset. This is the only way in which differential analysis can be performed at the merged replicate-level.
 
