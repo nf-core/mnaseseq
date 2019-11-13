@@ -124,7 +124,7 @@ The library-level alignments associated with the same sample are merged and subs
     [deepTools](https://deeptools.readthedocs.io/en/develop/content/list_of_tools.html)
 
     *Description*:  
-    deepTools plotFingerprint is a useful QC for ATAC-seq data in order to see the relative enrichment of the samples in the experiment on a genome-wide basis (see [plotFingerprint docs](https://deeptools.readthedocs.io/en/develop/content/tools/plotFingerprint.html)).
+    The output of deepTools plotFingerprint is a useful QC in order to see the relative enrichment of the samples in the experiment on a genome-wide basis (see [plotFingerprint docs](https://deeptools.readthedocs.io/en/develop/content/tools/plotFingerprint.html)).
 
     ![MultiQC - deepTools plotFingerprint plot](images/mqc_deeptools_plotFingerprint_plot.png)  
 
@@ -137,24 +137,6 @@ The library-level alignments associated with the same sample are merged and subs
       * Output files: `*.plotFingerprint.pdf`, `*.plotFingerprint.qcmetrics.txt`, `*.plotFingerprint.raw.txt`
     * `bwa/mergedLibrary/deepTools/plotProfile/`  
       * Output files: `*.computeMatrix.mat.gz`, `*.computeMatrix.vals.mat.gz`, `*.plotProfile.pdf`, `*.plotProfile.tab`.
-
-3. **MNase-seq QC metrics**
-
-    *Documentation*:  
-    [deepTools](https://deeptools.readthedocs.io/en/develop/content/list_of_tools.html)
-
-    *Description*:  
-    deepTools plotFingerprint is a useful QC for MNase-seq data in order to see the relative enrichment of the samples on a genome-wide basis (see [plotFingerprint docs](https://deeptools.readthedocs.io/en/develop/content/tools/plotFingerprint.html)).
-
-    ![MultiQC - deepTools plotFingerprint plot](images/mqc_deeptools_plotFingerprint_plot.png)  
-
-    The results from deepTools plotProfile gives you a quick visualisation for the genome-wide enrichment of your samples at the TSS. During the downstream analysis, you may want to refine the features/genes used to generate these plots in order to see a more specific condition-related effect.
-
-    *Output directories*:
-    * `bwa/mergedLibrary/deepTools/plotFingerprint/`  
-      `*.plotFingerprint.pdf`, `*.plotFingerprint.qcmetrics.txt`, `*.plotFingerprint.raw.txt`
-    * `bwa/mergedLibrary/deepTools/plotProfile/`  
-      `*.computeMatrix.mat.gz`, `*.computeMatrix.vals.mat.gz`, `*.plotProfile.pdf`, `*.plotProfile.tab`.
 
 4. **Nucleosome profiling**
 
