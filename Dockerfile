@@ -1,6 +1,6 @@
 FROM nfcore/base:1.7
 LABEL authors="Harshil Patel" \
-      description="Docker image containing all requirements for nf-core/mnaseseq pipeline"
+      description="Docker image containing all software requirements for the nf-core/mnaseseq pipeline"
 
 # Install the conda environment
 COPY environment.yml /
