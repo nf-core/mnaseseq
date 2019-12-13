@@ -1,4 +1,4 @@
-FROM nfcore/base:1.7
+FROM nfcore/base:dev
 LABEL authors="Harshil Patel" \
       description="Docker image containing all software requirements for the nf-core/mnaseseq pipeline"
 
