@@ -114,6 +114,7 @@ params.bwa_index = params.genome ? params.genomes[ params.genome ].bwa ?: false 
 params.gtf = params.genome ? params.genomes[ params.genome ].gtf ?: false : false
 params.gene_bed = params.genome ? params.genomes[ params.genome ].bed12 ?: false : false
 params.blacklist = params.genome ? params.genomes[ params.genome ].blacklist ?: false : false
+params.anno_readme = params.genome ? params.genomes[ params.genome ].readme ?: false : false
 
 // Has the run name been specified by the user?
 //  this has the bonus effect of catching both -name and --name
@@ -147,6 +148,7 @@ if (params.gtf)       { ch_gtf = file(params.gtf, checkIfExists: true) } else { 
 if (params.gene_bed)  { ch_gene_bed = file(params.gene_bed, checkIfExists: true) }
 if (params.tss_bed)   { ch_tss_bed = file(params.tss_bed, checkIfExists: true) }
 if (params.blacklist) { ch_blacklist = Channel.fromPath(params.blacklist, checkIfExists: true) } else { ch_blacklist = Channel.empty() }
+if (params.anno_readme && file(params.anno_readme).exists()) { ch_anno_readme = Channel.fromPath(params.anno_readme) } else { ch_anno_readme = Channel.empty() }
 
 if (params.fasta) {
     lastPath = params.fasta.lastIndexOf(File.separator)
@@ -394,9 +396,11 @@ process MakeGenomeFilter {
     input:
     file fasta from ch_fasta
     file blacklist from ch_blacklist.ifEmpty([])
+    file readme from ch_anno_readme.ifEmpty([])
 
     output:
     file "$fasta"                                      // FASTA FILE FOR IGV
+    file "$readme"                                     // AWS IGENOMES FILE CONTAINING ANNOTATION VERSION
     file "*.fai"                                       // FAI INDEX FOR REFERENCE GENOME
     file "*.bed" into ch_genome_filter_regions         // BED FILE WITHOUT BLACKLIST REGIONS & MITOCHONDRIAL CONTIG FOR FILTERING
     file "*.sizes" into ch_genome_sizes_mlib_bigwig,   // CHROMOSOME SIZES FILE FOR BEDTOOLS
