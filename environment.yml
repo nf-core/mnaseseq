@@ -5,11 +5,29 @@ channels:
   - conda-forge
   - bioconda
   - defaults
+  - imperial-college-research-computing
 dependencies:
+  ## conda-forge packages
   - conda-forge::python=3.7.3
   - conda-forge::markdown=3.1.1
   - conda-forge::pymdown-extensions=6.0
   - conda-forge::pygments=2.5.2
-  # TODO nf-core: Add required software dependencies here
-  - bioconda::fastqc=0.11.8
-  - bioconda::multiqc=1.7
+  - conda-forge::pigz=2.3.4               ## Required for TrimGalore multi-threading
+
+  ## bioconda packages
+  - bioconda::fastqc=0.11.9
+  - bioconda::trim-galore=0.6.5
+  - bioconda::bwa=0.7.17
+  - bioconda::samtools=1.9
+  - bioconda::picard=2.21.8
+  - bioconda::bamtools=2.5.1
+  - bioconda::pysam=0.15.4
+  - bioconda::bedtools=2.29.2
+  - bioconda::ucsc-bedgraphtobigwig=357
+  - bioconda::ucsc-wigtobigwig=357
+  - bioconda::preseq=2.0.3
+  - bioconda::deeptools=3.3.2
+  - bioconda::multiqc=1.8
+
+  ## other packages
+  - bioconda::danpos=2.2.2
