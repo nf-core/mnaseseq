@@ -1,5 +1,5 @@
 {
-    "$schema": "https://json-schema.org/draft-07/schema",
+    "$schema": "http://json-schema.org/draft-07/schema",
     "$id": "https://raw.githubusercontent.com/nf-core/mnaseseq/master/nextflow_schema.json",
     "title": "nf-core/mnaseseq pipeline parameters",
     "description": "MNase-seq analysis pipeline using BWA and DANPOS2.",
@@ -101,7 +101,7 @@
                         "link",
                         "copy",
                         "copyNoFollow",
-                        "mov"
+                        "move"
                     ]
                 },
                 "name": {
