@@ -1,30 +1,31 @@
 # You can use this file to create a conda environment for this pipeline:
 #   conda env create -f environment.yml
-name: nf-core-mnaseseq-1.0.0
+name: nf-core-mnaseseq-1.0dev
 channels:
   - conda-forge
   - bioconda
   - defaults
-  - imperial-college-research-computing
 dependencies:
   ## conda-forge packages
-  - r-base=3.4.1
-  - r-markdown=0.8
+  - conda-forge::python=2.7.15
+  - conda-forge::r-base=3.5.1
+  - conda-forge::markdown=3.1.1
+  - conda-forge::pymdown-extensions=6.0
+  - conda-forge::pygments=2.5.2
+  - conda-forge::pigz=2.3.4
 
   ## bioconda packages
-  - fastqc=0.11.8
-  - trim-galore=0.5.0
-  - bwa=0.7.17
-  - samtools=1.9
-  - picard=2.19.0
-  - bamtools=2.5.1
-  - pysam=0.15.2
-  - bedtools=2.27.1
-  - ucsc-bedgraphtobigwig=377
-  - ucsc-wigtobigwig=377
-  - preseq=2.0.3
-  - deeptools=3.2.1
-  - multiqc=1.7
-
-  ## other packages
-  - danpos=2.2.2
+  - bioconda::fastqc=0.11.9
+  - bioconda::trim-galore=0.6.5
+  - bioconda::bwa=0.7.17
+  - bioconda::samtools=1.9
+  - bioconda::picard=2.21.9
+  - bioconda::bamtools=2.5.1
+  - bioconda::pysam=0.15.4
+  - bioconda::bedtools=2.29.2
+  - bioconda::ucsc-bedgraphtobigwig=377
+  - bioconda::ucsc-wigtobigwig=377
+  - bioconda::danpos=2.2.2
+  - bioconda::preseq=2.0.3
+  - bioconda::deeptools=3.3.0
+  - bioconda::multiqc=1.8
