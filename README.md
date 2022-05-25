@@ -6,6 +6,7 @@
 
 [![install with bioconda](https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg)](http://bioconda.github.io/)
 [![Docker](https://img.shields.io/docker/automated/nfcore/mnaseseq.svg)](https://hub.docker.com/r/nfcore/mnaseseq)
+[![Cite with Zenodo](http://img.shields.io/badge/DOI-10.5281/zenodo.6581372-1073c8)](https://doi.org/10.5281/zenodo.6581372)
 
 ## Introduction
 
@@ -98,8 +99,7 @@ For further information or help, don't hesitate to get in touch on [Slack](https
 
 ## Citation
 
-<!-- TODO nf-core: Add citation for pipeline after first release. Uncomment lines below and update Zenodo doi. -->
-<!-- If you use  nf-core/mnaseseq for your analysis, please cite it using the following doi: [10.5281/zenodo.XXXXXX](https://doi.org/10.5281/zenodo.XXXXXX) -->
+If you use nf-core/mnaseseq for your analysis, please cite it using the following doi: [10.5281/zenodo.6581372](https://doi.org/10.5281/zenodo.6581372).
 
 You can cite the `nf-core` publication as follows:
 
