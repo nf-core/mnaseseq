@@ -4,7 +4,8 @@
     nf-core/mnaseseq
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     Github : https://github.com/nf-core/mnaseseq
-Website: https://nf-co.re/mnaseseq
+
+    Website: https://nf-co.re/mnaseseq
     Slack  : https://nfcore.slack.com/channels/mnaseseq
 ----------------------------------------------------------------------------------------
 */
