@@ -1,0 +1,21 @@
+// Define the Zenodo ID as a parameter
+params.zenodoID = ""
+
+// Define a process to check if this is the first release and add the Zenodo ID if it is
+process checkFirstRelease {
+    output:
+    file "first_release.txt"
+
+    script:
+    if (!fileExists("first_release.txt")) {
+        file("first_release.txt").write("This is the first release with Zenodo ID ${params.zenodoID}")
+    }
+}
+
+// Define your pipeline and include the checkFirstRelease process
+workflow {
+    // Your pipeline code here
+
+    // Include the checkFirstRelease process
+    checkFirstRelease { zenodoID = params.zenodoID }
+}
