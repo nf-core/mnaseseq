@@ -1,0 +1,10 @@
+# Ignore results 
+results
+
+#Ignore nextflow files
+.nextflow*
+work
+version*
+
+# Ignore the unnecessary test files
+test/results
