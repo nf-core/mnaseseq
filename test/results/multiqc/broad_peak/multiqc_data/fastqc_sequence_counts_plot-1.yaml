@@ -1,0 +1,24 @@
+DEGRON_REP1_T1_1:
+  Duplicate Reads: 7864
+  Unique Reads: 90171
+DEGRON_REP1_T1_2:
+  Duplicate Reads: 8373
+  Unique Reads: 89662
+DEGRON_REP2_T1_1:
+  Duplicate Reads: 13600
+  Unique Reads: 86109
+DEGRON_REP2_T1_2:
+  Duplicate Reads: 12864
+  Unique Reads: 86845
+WT_REP1_T1_1:
+  Duplicate Reads: 13109
+  Unique Reads: 86233
+WT_REP1_T1_2:
+  Duplicate Reads: 14356
+  Unique Reads: 84986
+WT_REP2_T1_1:
+  Duplicate Reads: 10217
+  Unique Reads: 89710
+WT_REP2_T1_2:
+  Duplicate Reads: 8724
+  Unique Reads: 91203

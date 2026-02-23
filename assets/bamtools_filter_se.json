@@ -1,14 +1,5 @@
 {
-    "filters" : [
-        { "id" : "mismatch",
-          "tag" : "NM:<=MAX_MISMATCH"
-        },
+    "filters": [{ "id": "mismatch", "tag": "NM:<=4" }],
 
-        { "id" : "cigar",
-          "cigar" : "*S*"
-        }
-    ],
-
-    "rule" : " mismatch & !cigar "
-
+    "rule": " mismatch "
 }

@@ -1,0 +1,76 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/modules/meta-schema.json
+name: "danpos_callnucleosome"
+description: Run the danpos dpos command to asses the nucleosomes positions in the genome
+keywords:
+  - BAM
+  - Nucleosomes
+  - Position
+tools:
+  - "danpos_callnucleosome":
+      description: "A toolkit for Dynamic Analysis of Nucleosome and Protein Occupancy
+        by Sequencing, version 2"
+      homepage: "https://sites.google.com/site/danposdoc/"
+      documentation: "https://sites.google.com/site/danposdoc/"
+      tool_dev_url: "https://github.com/sklasfeld/DANPOS3"
+      doi: "10.1101/gr.142067.112 "
+      licence: ["Unknown"]
+      identifier: biotools:danpos
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information
+          e.g. `[ id:'sample1' ]`
+    - bam:
+        type: file
+        description: Sorted BAM/CRAM/SAM file
+        pattern: "*.{bam,bed,sam,bowtie}"
+        ontologies:
+          - edam: "http://edamontology.org/format_2572" # BAM
+          - edam: "http://edamontology.org/format_3003" # BED
+          - edam: "http://edamontology.org/format_3462" # SAM
+          - edam: "http://edamontology.org/format_3484" # BOWTIE
+
+output:
+  xls:
+    - - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. `[ id:'sample1' ]`
+      - "*.xls":
+          type: file
+          description: Output of DANPOS Dpos command (xls file)
+          pattern: "*.{xls}"
+          ontologies:
+            - edam: "http://edamontology.org/format_2572" # BAM
+  wig:
+    - - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. `[ id:'sample1' ]`
+      - "*.wig":
+          type: file
+          description: Output of DANPOS Dpos command (wig file)
+          pattern: "*.{wig}"
+          ontologies:
+            - edam: "http://edamontology.org/format_3005" # WIG
+
+topics:
+    versions_danpos_callnucleosome:
+    - - "${task.process}":
+          type: string
+          description: The name of the process
+      - "danpos_callnucleosome":
+          type: string
+          description: The name of the tool
+      - "danpos_callnucleosome --version":
+          type: eval
+          description: The expression to obtain the version of the tool
+
+authors:
+  - "@Bios-seG"
+maintainers:
+  - "@Bios-seG"

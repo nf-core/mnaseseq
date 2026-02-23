@@ -1,0 +1,97 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/nf-core/modules/master/modules/meta-schema.json
+name: "danpos_callnucleosome"
+description: Run the danpos dpos command to asses the nucleosomes positions in the genome
+keywords:
+  - WIG
+  - Nucleosomes
+  - Position
+tools:
+  - "danpos_callnucleosome":
+      description: "A toolkit for Dynamic Analysis of Nucleosome and Protein Occupancy
+        by Sequencing, version 2"
+      homepage: "https://sites.google.com/site/danposdoc/"
+      documentation: "https://sites.google.com/site/danposdoc/"
+      tool_dev_url: "https://github.com/sklasfeld/DANPOS3"
+      doi: "10.1101/gr.142067.112 "
+      licence: ["Unknown"]
+      identifier: biotools:danpos
+
+input:
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information
+          e.g. `[ id:'sample1' ]`
+    - bam:
+        type: file
+        description: Wig file
+        pattern: "*.{wig}"
+        ontologies:
+          - edam: "http://edamontology.org/format_3005" # WIG
+
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information
+          e.g. `[ id:'sample1' ]`
+    - bam:
+        type: file
+        description: Bed file of the genes
+        pattern: "*.{bed}"
+        ontologies:
+          - edam: "http://edamontology.org/format_3003" # BED
+
+
+  - - meta:
+        type: map
+        description: |
+          Groovy Map containing sample information
+          e.g. `[ id:'sample1' ]`
+    - bam:
+        type: file
+        description: Wig file
+        pattern: "*.{wig}"
+        ontologies:
+          - edam: "http://edamontology.org/format_3005" # WIG
+output:
+  xls:
+    - - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. `[ id:'sample1' ]`
+      - "*.xls":
+          type: file
+          description: Output of DANPOS profile command (xls file)
+          pattern: "*.{xls}"
+          ontologies:
+            - edam: "http://edamontology.org/format_3468" # XLS
+  pdf:
+    - - meta:
+          type: map
+          description: |
+            Groovy Map containing sample information
+            e.g. `[ id:'sample1' ]`
+      - "*.wig":
+          type: file
+          description: Output of DANPOS profile command (pdf file)
+          pattern: "*.{pdf}"
+          ontologies:
+            - edam: "http://edamontology.org/format_3508" # PDF
+
+
+topics:
+  versions:
+    - - ${task.process}:
+          type: string
+          description: The name of the process
+      - danpos_profile:
+          type: string
+          description: The name of the tool
+      - danpos_profile --version:
+          type: eval
+          description: The expression to obtain the version of the tool
+authors:
+  - "@Bios-seG"
+maintainers:
+  - "@Bios-seG"

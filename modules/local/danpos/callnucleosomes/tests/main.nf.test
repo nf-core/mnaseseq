@@ -1,0 +1,67 @@
+// nf-core modules test danpos_callnucleosome
+nextflow_process {
+
+    name "Test Process DANPOS_CALLNUCLEOSOME"
+    script "../main.nf"
+    process "DANPOS_CALLNUCLEOSOME"
+
+    tag "modules"
+    tag "modules_nfcore"
+    tag "danpos_callnucleosome"
+
+    test("Should create DANPOS xls, wig and version files - bed") {
+
+
+        when {
+            process {
+                """
+                input[0] = [
+                    [ id:'test' ],
+                    file("${projectDir}/results/tests/bedops/DEGRON_REP1.bed", checkIfExists: true),
+                ]
+                """
+            }
+        }
+
+        then {
+            println(process.out.versions)
+            assert process.success
+            assertAll(
+               { assert snapshot(
+                   process.out.xls,
+                   process.out.wig,
+                   process.out.versions
+               ).match() }
+            )
+        }
+
+    }
+
+    test("Should create stub xls, wig and version file - bed - stub") {
+        options "-stub"
+
+        when {
+            process {
+                """
+                input[0] = [
+                    [ id:'test' ],
+                    file("${projectDir}/results/bedops/TEST_U50_REP1_T1.bed", checkIfExists: true),
+                ]
+                """
+            }
+        }
+
+        then {
+            assert process.success
+            assertAll(  
+                { assert snapshot(  
+                    process.out.xls,
+                    process.out.wig,
+                    process.out.versions
+                ).match() }
+            )
+        }
+    }
+
+
+}

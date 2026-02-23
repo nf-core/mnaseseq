@@ -1,0 +1,44 @@
+BEDOPS_CONVERT2BED:
+  bedops/convert2bed: 2.4.41
+BWA_INDEX:
+  bwa: 0.7.18-r1243-dirty
+BWA_MEM:
+  bwa: 0.7.18-r1243-dirty
+  samtools: 1.2
+CUSTOM_GETCHROMSIZES:
+  getchromsizes: 1.2
+DANPOS_CALLNUCLEOSOME: danpos_callnucleosome, danpos
+DEEPTOOLS_COMPUTEMATRIX:
+  deeptools: 3.5.5
+DEEPTOOLS_PLOTPROFILE:
+  deeptools: 3.5.5
+FASTQC:
+  fastqc: 0.12.1
+GENOME_BLACKLIST_REGIONS:
+  bedtools: 2.27.1
+GTF2BED:
+  perl: 5.26.2
+PICARD_COLLECTMULTIPLEMETRICS:
+  picard: 3.2.0-1-g3948afb6b
+PICARD_MERGESAMFILES:
+  picard: 3.2.0-1-g3948afb6b
+SAMPLESHEET_CHECK:
+  python: 3.8.3
+SAMTOOLS_FLAGSTAT:
+  samtools: 1.2
+SAMTOOLS_IDXSTATS:
+  samtools: 1.2
+SAMTOOLS_INDEX:
+  samtools: 1.2
+SAMTOOLS_SORT:
+  samtools: 1.2
+SAMTOOLS_STATS:
+  samtools: 1.2
+TRIMGALORE:
+  trimgalore: 0.6.7
+  cutadapt: 3.4
+UCSC_WIGTOBIGWIG:
+  ucsc: 447
+Workflow:
+    nf-core/chipseq: v2.1.0
+    Nextflow: 25.10.2
